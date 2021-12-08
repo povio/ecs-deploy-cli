@@ -17,6 +17,7 @@ class Docker {
       if (process.env.VERBOSE) {
         cli.error(e.toString());
       }
+      // todo, check this without .version()
       this.enabled = false;
       return "n/a";
     }

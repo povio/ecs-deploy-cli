@@ -16,44 +16,24 @@ class Git {
       if (process.env.VERBOSE) {
         cli.error(e.toString());
       }
+      // todo, check this without .version()
       this.enabled = false;
       return "n/a";
     }
   }
 
   async verifyPristine(): Promise<void> {
-    // # check for changes in git
-    // check_git_changes() {
-    //   WORK_DIR=$(pwd)
-    //   if [ -d "$WORK_DIR/.git" ]; then
-    //     if [[ $(git status --porcelain) ]]; then
-    //       if [ -z "$IGNORE_GIT_CHANGES" ]; then
-    //         log error "Detected changes in .git"
-    //         exit 1;
-    //       else
-    //         log warning "Detected changes in .git"
-    //       fi
-    //     fi
-    //   else
-    //     log warning ".git not found"
-    //   fi
-    // }
-
-    console.log({ porcelain: await this.git.raw("status","--porcelain") });
-
-
-    if (await this.git.raw("status", "--porcelain")) {
+    if (
+      ((await this.git.raw("status", "--porcelain")) as any).porcelain !== ""
+    ) {
       if (process.env.IGNORE_GIT_CHANGES) {
-        cli.notice("Git changes ignored");
+        cli.warning("Detected changes in .git");
+      } else {
+        throw new Error(
+          "Detected changes in .git: Make sure the build is pristine"
+        );
       }
-      return;
     }
-
-    if (process.env.IGNORE_GIT_CHANGES) {
-      cli.warning("Git changes ignored");
-      return;
-    }
-    throw new Error("Detected changes in .git");
   }
 }
 

@@ -1,15 +1,20 @@
 import chalk, { Level as ColorSupportLevel, Chalk } from "chalk";
 import * as Console from "console";
+import Prompt from "prompt-sync";
 
 export class Cli {
   private readonly chalk: Chalk;
   private readonly log: typeof Console.log;
   public readonly pwd: string;
+  public readonly nonInteractive: boolean;
+  private readonly prompt;
 
   constructor(level: ColorSupportLevel = 2) {
-    this.chalk = new chalk.Instance({ level: process.env.CI ? 0 : level });
+    this.chalk = new chalk.Instance({ level });
     this.pwd = process.cwd();
     this.log = Console.log;
+    this.nonInteractive = !!process.env.CI;
+    this.prompt = Prompt({ sigint: true });
   }
 
   /**
@@ -21,7 +26,7 @@ export class Cli {
   var(name: string, value: string | number, def?: string | number) {
     if (def !== undefined && def !== value) {
       this.log(
-        `${`${this.chalk.yellow(name)}:`.padEnd(20)}${this.chalk.magenta(
+        `${this.chalk.yellow(`${name}:`.padEnd(20))}${this.chalk.magenta(
           value
         )}`
       );
@@ -48,6 +53,36 @@ export class Cli {
 
   banner(message: string) {
     this.log(this.chalk.bgYellow(`==== ${message} ====`));
+  }
+
+  /**
+   * Set a env variable
+   * @param name
+   * @param value
+   * @param suggested - the value the scripts expects and suggest
+   */
+  prompt_var(name: string, value: string, suggested?: string) {
+    if (value !== undefined) {
+      this.var(name, value, suggested);
+      return value;
+    }
+    if (this.nonInteractive) {
+      if (suggested !== undefined) {
+        // take suggestion on CI
+        this.var(name, value, suggested);
+        return suggested;
+      } else {
+        throw new Error(`Missing Environment: ${name}`);
+      }
+    } else {
+      const response = this.prompt(
+        `Please provide ${this.chalk.yellow(name)} (${suggested}):`,
+        suggested
+      );
+      // todo remove previous line to prevent duplicates
+      this.var(name, response, suggested);
+      return response;
+    }
   }
 }
 

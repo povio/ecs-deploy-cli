@@ -14,10 +14,8 @@ import * as process from "process";
 import { getEnv } from "./env.helper";
 
 (async function () {
-  const CI = process.env.CI;
-
   // display tooling versions for debugging purposes
-  cli.banner("Build Environment");
+  cli.banner("Build System");
   cli.var("ECS_DEPLOY_CLI", ECS_DEPLOY_CLI);
   cli.var("PWD", cli.pwd);
   cli.var("AWS_SDK_VERSION", AWS_SDK_VERSION);
@@ -26,23 +24,27 @@ import { getEnv } from "./env.helper";
   cli.var("DOCKER_VERSION", await docker.version());
 
   // todo, print out some circleci details
-  if (CI) {
-    cli.var("CI", process.env.CI);
-  }
+  //if (cli.nonInteractive) {
+  //}
 
-  cli.banner("Build Variables");
-
-  if (process.env.STAGE) {
-    cli.var("STAGE", process.env.STAGE);
-    // get env from .env.${STAGE}(?:.(${SERVICE}|secrets))
-    const env = getEnv(cli.pwd, process.env.STAGE);
-  }
-
+  // display environment variables
+  cli.banner("Build Environment");
   if (git.enabled) {
+    // prevent deploying uncommitted code
     await git.verifyPristine();
   }
+  if (process.env.STAGE) {
+    cli.var("STAGE", process.env.STAGE);
+  }
 
-  // prevent deploying uncommitted code
+  // get env from .env.${STAGE}(?:.(${SERVICE}|secrets))
+  const env = getEnv(cli.pwd, process.env.STAGE);
+
+  const dockerfilePath = cli.prompt_var(
+    "DOCKER_PATH",
+    env.DOCKER_PATH || `Dockerfile`
+  );
+
   // check_git_changes
 })().catch((e) => {
   console.error(e);
