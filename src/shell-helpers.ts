@@ -3,18 +3,6 @@
 // # Deploy tooling
 // ## Version: 1.1
 //
-// # Colors
-// if [ -n "$CI" ] || [ -n "$NO_COLOR" ]; then
-//   c_r=``
-//   c_g=``
-//   c_y=``
-//   c_x=``
-// else
-//   c_r=`tput setaf 1` # red
-//   c_g=`tput setaf 2` # green
-//   c_y=`tput setaf 3` # yellow
-//   c_x=`tput sgr0`
-// fi
 //
 //
 // log () {
@@ -22,34 +10,6 @@
 //   LOG_MESSAGE=${2}
 //
 //   case $LOG_TYPE in
-//     error)
-//       # something fatal
-//       echo "${c_r}[ERROR] ${LOG_MESSAGE}${c_x}";
-//       ;;
-//     warning)
-//       # something that needs to be fixed, but not fatal
-//       echo "${c_y}[WARNING] ${LOG_MESSAGE}${c_x}";
-//       ;;
-//     info)
-//       # something regular
-//       echo "${c_g}[INFO] ${LOG_MESSAGE}${c_x}";
-//       ;;
-//     notice)
-//       # something irregular
-//       echo "${c_g}[NOTICE] ${LOG_MESSAGE}${c_x}";
-//       ;;
-//     banner)
-//       # section banner
-//       echo "${c_g}==== ${LOG_MESSAGE} ====${c_x}";
-//       ;;
-//     var)
-//       # variable
-//       printf "%-20s %s\n" "$LOG_MESSAGE:" "${3}"
-//       ;;
-//     noticevar)
-//       # info variable
-//       printf "${c_y}%-20s %s\n" "$LOG_MESSAGE:" "${3}${c_x}"
-//       ;;
 //     confirm)
 //       # confirm if CLI
 //       if [ -z "$CI" ]; then
@@ -131,56 +91,7 @@
 //   env_or_prompt "RELEASE" RELEASE
 // }
 //
-// # pull the env variables from .env
-// load_stage_env () {
-//   WORK_DIR=$(pwd)
-//
-//   # make the STAGE loading optional
-//   if [ "${1}" = false ]; then
-//     if [ -z "$STAGE" ]; then
-//       return
-//     fi
-//   fi
-//
-//   set -o allexport
-//
-//   env_or_prompt "STAGE" STAGE
-//
-//   if [ -f "$WORK_DIR/.env.$STAGE" ]; then
-//     log info "Loading .env.$STAGE"
-//     source "$WORK_DIR/.env.$STAGE"
-//   else
-//     log warning ".env.$STAGE does not exist"
-//   fi
-//
-//   # load deploy time secrets
-//   #  runtime secrets should be injected with SSM/Secrets, see load_secrets
-//   if [ -f "$WORK_DIR/.env.$STAGE.secrets" ]; then
-//     if [ -z "$CI" ] ; then
-//       log info "Loading .env.$STAGE.secrets"
-//       source "$WORK_DIR/.env.$STAGE.secrets"
-//     else
-//       # secrets should not be loaded from CI
-//       log warning "Did not load .env.$STAGE.secrets"
-//     fi
-//   fi
-//
-//   # load in a target of the stage
-//   #  make sure you dont override
-//   #  example use is for deploying multiple tasks
-//   if [ -n "$SERVICE" ]; then
-//     if [ -f "$WORK_DIR/.env.$STAGE.$SERVICE" ]; then
-//       log var SERVICE "$SERVICE"
-//       log info "Loading .env.$STAGE.$SERVICE"
-//       source "$WORK_DIR/.env.$STAGE.$SERVICE"
-//     else
-//       log warning ".env.$STAGE.$SERVICE does not exist"
-//     fi
-//   fi
-//
-//   set +o allexport
-//
-// }
+
 //
 // # Dockerfile
 // load_dockerfile () {

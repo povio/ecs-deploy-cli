@@ -1,27 +1,42 @@
-// #!/bin/bash
-//
-// ## Build the Docker image and deploy it to ECR
-// ## Skip building if the release (git version) already exists
-// ## Version: 1.1
-//
-// set -e
-// # shellcheck source=./shell-helpers.sh
-// source "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)/shell-helpers.sh"
-//
-// log var PWD "$(pwd)"
-// log var AWS_CLI_VERSION "$(aws --version)"
-// log var GIT_VERSION "$(git --version)"
-// log var NODE_VERSION "$(node --version)"
-// log var DOCKER_VERSION "$(docker --version)"
-//
-// # prevent deploying uncommitted code
-// check_git_changes
-//
+/*
+ Build the Docker image and deploy it to ECR
+  - Skip building if the release (git version) already exists
+ Version: 0.1
+ */
+
+const ECS_DEPLOY_CLI = "0.1";
+
+import cli from "./cli.helper";
+import { AWS_SDK_VERSION } from "./aws.helper";
+import git from "./git.helper";
+import docker from "./docker.helper";
+import * as process from "process";
+import { getEnv } from "./env.helper";
+
+(async function () {
+  // display tooling versions for debugging purposes
+  cli.var("ECS_DEPLOY_CLI", ECS_DEPLOY_CLI);
+  cli.var("PWD", cli.pwd);
+  cli.var("AWS_SDK_VERSION", AWS_SDK_VERSION);
+  cli.var("GIT_CLI_VERSION", await git.version());
+  cli.var("NODE_VERSION", process.version);
+  cli.var("DOCKER_VERSION", await docker.version());
+
+  cli.banner("Build Environment");
+  cli.var("STAGE", process.env.STAGE);
+  const env = getEnv(cli.pwd, process.env.STAGE);
+
+  // prevent deploying uncommitted code
+  // check_git_changes
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
+
 // # load environment from .env.$STAGE
 // #  AWS_REGION=
 // #  AWS_ACCOUNT_ID=
 // #  AWS_REPO_NAME=
-//   load_stage_env false
 //
 // load_dockerfile
 //
