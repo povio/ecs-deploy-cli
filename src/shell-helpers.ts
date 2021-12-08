@@ -66,22 +66,7 @@
 //   env_or_prompt "AWS_REGION" AWS_REGION
 // }
 //
-// # check for changes in git
-// check_git_changes() {
-//   WORK_DIR=$(pwd)
-//   if [ -d "$WORK_DIR/.git" ]; then
-//     if [[ $(git status --porcelain) ]]; then
-//       if [ -z "$IGNORE_GIT_CHANGES" ]; then
-//         log error "Detected changes in .git"
-//         exit 1;
-//       else
-//         log warning "Detected changes in .git"
-//       fi
-//     fi
-//   else
-//     log warning ".git not found"
-//   fi
-// }
+
 //
 // # Release
 // load_release () {
