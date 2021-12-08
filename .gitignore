@@ -1,0 +1,16 @@
+# yarn
+.yarn/*
+#!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+!.pnp.cjs
+
+node_modules
+
+# IDEs and editors
+.idea
+.DS_Store
+/test/data
