@@ -9,6 +9,10 @@ class Docker {
   public enabled: boolean;
   public _version: string;
 
+  get version() {
+    return this._version;
+  }
+
   async init() {
     try {
       this._version = (await dockerCommand("--version", options)).raw

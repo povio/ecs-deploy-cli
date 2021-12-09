@@ -10,6 +10,10 @@ class Git {
     this.git = simpleGit(cli.pwd);
   }
 
+  get version() {
+    return this._version;
+  }
+
   async init() {
     try {
       this._version = (await this.git.raw("--version")).trim();

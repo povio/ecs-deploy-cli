@@ -36,7 +36,7 @@ export class Cli {
   }
 
   info(message: string) {
-    this.log(this.chalk.yellow(`[INFO] ${message}`));
+    this.log(`[INFO] ${message}`);
   }
 
   notice(message: string) {

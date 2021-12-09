@@ -15,3 +15,5 @@ node_modules
 .DS_Store
 /test/data
 src/*.js
+
+.env.*.secrets

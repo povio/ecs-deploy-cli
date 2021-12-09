@@ -13,7 +13,7 @@ export function getEnv(pwd: string, stage: string) {
 
   if (stage) {
     if (fs.existsSync(`.env.${stage}`)) {
-      cli.info(`Loading .env.${stage}`);
+      // cli.info(`Loading .env.${stage}`);
       out = { ...out, ...dotenv.parse(fs.readFileSync(`.env.${stage}`)) };
     } else {
       cli.notice(`Can not find .env.${stage}`);
@@ -26,7 +26,7 @@ export function getEnv(pwd: string, stage: string) {
       if (process.env.CI) {
         cli.warning(`Loading .env.${stage}.secrets`);
       } else {
-        cli.notice(`Loading .env.${stage}.secrets`);
+        cli.info(`Loading .env.${stage}.secrets`);
       }
       out = {
         ...out,

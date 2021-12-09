@@ -7,70 +7,64 @@
 const ECS_DEPLOY_CLI = "0.1";
 
 import cli from "./cli.helper";
-import { AWS_SDK_VERSION } from "./aws.helper";
+import aws from "./aws.helper";
 import git from "./git.helper";
 import docker from "./docker.helper";
 import * as process from "process";
 import { getEnv } from "./env.helper";
 
 (async function () {
-  cli.banner("Build System");
-
-  // init tooling
-  const GIT_CLI_VERSION = await git.init();
-  const DOCKER_VERSION = await docker.init();
-
-  // display tooling versions for debugging purposes
   cli.var("ECS_DEPLOY_CLI", ECS_DEPLOY_CLI);
   cli.var("PWD", cli.pwd);
-  cli.var("AWS_SDK_VERSION", AWS_SDK_VERSION);
-  cli.var("GIT_CLI_VERSION", GIT_CLI_VERSION);
   cli.var("NODE_VERSION", process.version);
-  cli.var("DOCKER_VERSION", DOCKER_VERSION);
 
-  // todo, print out some circleci details
-  //if (cli.nonInteractive) {
-  //}
+  await git.init();
+  cli.var("GIT_CLI_VERSION", git.version);
 
+  await docker.init();
+  cli.var("DOCKER_VERSION", docker.version);
+  cli.var("AWS_SDK_VERSION", aws.version);
+
+  cli.banner("Build Environment");
+
+  // get current STAGE if set
+  // CI would not use this for builds
   if (process.env.STAGE) {
     cli.var("STAGE", process.env.STAGE);
   }
-
   // get env from .env.${STAGE}(?:.(${SERVICE}|secrets))
   const env = getEnv(cli.pwd, process.env.STAGE);
 
-  cli.banner("Build Environment");
   if (git.enabled) {
     // prevent deploying uncommitted code
     await git.verifyPristine(!!env.IGNORE_GIT_CHANGES);
   }
 
-  const DOCKER_PATH = env.DOCKER_PATH || "Dockerfile";
-  if (DOCKER_PATH !== "Dockerfile") {
-    cli.var("DOCKER_PATH", env.DOCKER_PATH, "Dockerfile");
-  }
-
+  // release sha
   const GIT_RELEASE = await git.getRelease();
   const RELEASE = cli.promptVar(
     "RELEASE",
     env.RELEASE || GIT_RELEASE,
     GIT_RELEASE
   );
+
+  const DOCKER_PATH = env.DOCKER_PATH || "Dockerfile";
+  if (DOCKER_PATH !== "Dockerfile") {
+    cli.var("DOCKER_PATH", env.DOCKER_PATH, "Dockerfile");
+  }
+
+  // load AWS credentails
+  await aws.init(env);
+
+  // load ECR details
+  const AWS_REGION = cli.promptVar("AWS_REGION", env.AWS_REGION);
+  const AWS_ACCOUNT_ID = cli.promptVar("AWS_ACCOUNT_ID", env.AWS_ACCOUNT_ID);
+  const AWS_REPO_NAME = cli.promptVar("AWS_REPO_NAME", env.AWS_REPO_NAME);
 })().catch((e) => {
   console.error(e);
   process.exit(1);
 });
 
-// # load environment from .env.$STAGE
-// #  AWS_REGION=
-// #  AWS_ACCOUNT_ID=
-// #  AWS_REPO_NAME=
-// # load credentials from env or aws profile
-// load_aws_credentials
-//
-// # ECR repository name
-// env_or_prompt "AWS_REPO_NAME" AWS_REPO_NAME
-//
 // if [ -z "$SKIP_ECR_EXISTS_CHECK" ]; then
 // aws ecr describe-images --repository-name="${AWS_REPO_NAME}" --image-ids=imageTag="${RELEASE}" 2>/dev/null && has_image=1 || has_image=0
 // if [[ $has_image == 1 ]]; then
