@@ -3,30 +3,32 @@ import cli from "./cli.helper";
 
 class Git {
   private git: SimpleGit;
-  public enabled = true;
+  private _version: string;
+  public enabled: boolean;
 
   constructor() {
     this.git = simpleGit(cli.pwd);
   }
 
-  async version(): Promise<string> {
+  async init() {
     try {
-      return (await this.git.raw("--version")).trim();
+      this._version = (await this.git.raw("--version")).trim();
+      this.enabled = true;
     } catch (e) {
       if (process.env.VERBOSE) {
         cli.error(e.toString());
       }
-      // todo, check this without .version()
       this.enabled = false;
       return "n/a";
     }
+    return this._version;
   }
 
-  async verifyPristine(): Promise<void> {
+  async verifyPristine(ignore = false): Promise<void> {
     if (
       ((await this.git.raw("status", "--porcelain")) as any).porcelain !== ""
     ) {
-      if (process.env.IGNORE_GIT_CHANGES) {
+      if (ignore) {
         cli.warning("Detected changes in .git");
       } else {
         throw new Error(
@@ -34,6 +36,13 @@ class Git {
         );
       }
     }
+  }
+
+  async getRelease(): Promise<string> {
+    if (!this.enabled) {
+      return undefined;
+    }
+    return await this.git.revparse("HEAD");
   }
 }
 

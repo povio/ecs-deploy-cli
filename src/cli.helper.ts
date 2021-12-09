@@ -31,7 +31,7 @@ export class Cli {
         )}`
       );
     } else {
-      this.log(`${this.chalk.yellow(`${name}:`.padEnd(20))}${value}`);
+      this.log(`${`${name}:`.padEnd(20)}${value}`);
     }
   }
 
@@ -44,7 +44,7 @@ export class Cli {
   }
 
   warning(message: string) {
-    this.log(this.chalk.magenta(`[WARNING] ${message}`));
+    this.log(this.chalk.red(`[WARNING] ${message}`));
   }
 
   error(message: string) {
@@ -61,7 +61,7 @@ export class Cli {
    * @param value
    * @param suggested - the value the scripts expects and suggest
    */
-  prompt_var(name: string, value: string, suggested?: string) {
+  promptVar(name: string, value: string, suggested?: string) {
     if (value !== undefined) {
       this.var(name, value, suggested);
       return value;

@@ -14,25 +14,24 @@ import * as process from "process";
 import { getEnv } from "./env.helper";
 
 (async function () {
-  // display tooling versions for debugging purposes
   cli.banner("Build System");
+
+  // init tooling
+  const GIT_CLI_VERSION = await git.init();
+  const DOCKER_VERSION = await docker.init();
+
+  // display tooling versions for debugging purposes
   cli.var("ECS_DEPLOY_CLI", ECS_DEPLOY_CLI);
   cli.var("PWD", cli.pwd);
   cli.var("AWS_SDK_VERSION", AWS_SDK_VERSION);
-  cli.var("GIT_CLI_VERSION", await git.version());
+  cli.var("GIT_CLI_VERSION", GIT_CLI_VERSION);
   cli.var("NODE_VERSION", process.version);
-  cli.var("DOCKER_VERSION", await docker.version());
+  cli.var("DOCKER_VERSION", DOCKER_VERSION);
 
   // todo, print out some circleci details
   //if (cli.nonInteractive) {
   //}
 
-  // display environment variables
-  cli.banner("Build Environment");
-  if (git.enabled) {
-    // prevent deploying uncommitted code
-    await git.verifyPristine();
-  }
   if (process.env.STAGE) {
     cli.var("STAGE", process.env.STAGE);
   }
@@ -40,12 +39,23 @@ import { getEnv } from "./env.helper";
   // get env from .env.${STAGE}(?:.(${SERVICE}|secrets))
   const env = getEnv(cli.pwd, process.env.STAGE);
 
-  const dockerfilePath = cli.prompt_var(
-    "DOCKER_PATH",
-    env.DOCKER_PATH || `Dockerfile`
-  );
+  cli.banner("Build Environment");
+  if (git.enabled) {
+    // prevent deploying uncommitted code
+    await git.verifyPristine(!!env.IGNORE_GIT_CHANGES);
+  }
 
-  // check_git_changes
+  const DOCKER_PATH = env.DOCKER_PATH || "Dockerfile";
+  if (DOCKER_PATH !== "Dockerfile") {
+    cli.var("DOCKER_PATH", env.DOCKER_PATH, "Dockerfile");
+  }
+
+  const GIT_RELEASE = await git.getRelease();
+  const RELEASE = cli.promptVar(
+    "RELEASE",
+    env.RELEASE || GIT_RELEASE,
+    GIT_RELEASE
+  );
 })().catch((e) => {
   console.error(e);
   process.exit(1);
@@ -55,12 +65,6 @@ import { getEnv } from "./env.helper";
 // #  AWS_REGION=
 // #  AWS_ACCOUNT_ID=
 // #  AWS_REPO_NAME=
-//
-// load_dockerfile
-//
-// # load RELEASE from .git
-// load_release
-//
 // # load credentials from env or aws profile
 // load_aws_credentials
 //
