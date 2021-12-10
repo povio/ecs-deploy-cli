@@ -23,7 +23,7 @@
   "contributors": [
     "Marko Zabreznik <marko.zabreznik@poviolabs.com>"
   ],
-  "bin": "bin/spa-deploy-cli",
+  "bin": "bin/ecs-deploy-cli",
   "dependencies": {
     "@types/eslint": "^8.2.1",
     "@types/eslint-plugin-prettier": "^3",
