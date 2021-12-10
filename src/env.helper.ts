@@ -1,9 +1,3 @@
-/**
- * PovioLabs SPA Deploy Script Helpers
- *
- * @version 1.2
- */
-
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import cli from "./cli.helper";
