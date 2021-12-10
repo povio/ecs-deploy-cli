@@ -2,13 +2,13 @@
 
 ## WIP
 
-[x] happy path build for ECR
-[] build/deploy for next.js
-[] mac m1 support for docker build
-[] merge build and deploy into single bin
-[] `STAGE=app-dev yarn ecs:build`
-[] `STAGE=app-dev yarn ecs:deploy`
-[] yaml config
+- [x] happy path build for ECR
+- [] build/deploy for next.js
+- [] mac m1 support for docker build
+- [] merge build and deploy into single bin
+- [] `STAGE=app-dev yarn ecs:build`
+- [] `STAGE=app-dev yarn ecs:deploy`
+- [] yaml config
 
 
 Use this tool to deploy a Docker image to ECR and ECS with CI or manually.
