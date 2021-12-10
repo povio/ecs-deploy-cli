@@ -55,12 +55,17 @@ import { getEnv } from "./env.helper";
   const AWS_REPO_NAME = cli.promptVar("AWS_REPO_NAME", env.AWS_REPO_NAME);
 
   // load AWS credentials
-  await aws.init(env);
+  await aws.init({
+    AWS_PROFILE: env.AWS_PROFILE,
+    AWS_REGION: env.AWS_REGION,
+    AWS_SECRET_ACCESS_KEY: env.AWS_SECRET_ACCESS_KEY,
+    AWS_ACCESS_KEY_ID: env.AWS_ACCESS_KEY_ID,
+    AWS_SESSION_TOKEN: env.AWS_SESSION_TOKEN,
+  });
 
   if (!env.SKIP_ECR_EXISTS_CHECK) {
     if (
-      await aws.ecsImageExists({
-        region: AWS_REGION,
+      await aws.ecrImageExists({
         repositoryName: AWS_REPO_NAME,
         imageIds: [{ imageTag: RELEASE }],
       })
@@ -85,6 +90,10 @@ import { getEnv } from "./env.helper";
     cli.info("Building docker image");
     await docker.imageBuild(IMAGE_NAME, RELEASE, DOCKER_PATH);
   }
+
+  cli.banner("Push step");
+  cli.info("Getting AWS Docker Auth");
+  await aws.ecrGetLoginPassword();
 })().catch((e) => {
   cli.error(e);
   process.exit(1);

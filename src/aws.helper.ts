@@ -9,7 +9,13 @@ class AwsHelper {
     return (AWS as any).VERSION;
   }
 
-  async init(env: Record<string, any>) {
+  async init(env: {
+    AWS_SECRET_ACCESS_KEY?: string;
+    AWS_ACCESS_KEY_ID?: string;
+    AWS_SESSION_TOKEN?: string;
+    AWS_PROFILE?: string;
+    AWS_REGION: string;
+  }) {
     if (!!env.AWS_PROFILE) {
       this.credentials = new SharedIniFileCredentials({
         profile: env.AWS_PROFILE,
@@ -21,20 +27,18 @@ class AwsHelper {
         sessionToken: env.AWS_SESSION_TOKEN || undefined,
       });
     }
+    this.ecr = new ECR({
+      credentials: this.credentials,
+      region: env.AWS_REGION,
+    });
   }
 
-  async ecsImageExists(options: {
-    region: string;
+  async ecrImageExists(options: {
     repositoryName: string;
     imageIds: ECR.ImageIdentifierList;
   }) {
-    const ecr = new ECR({
-      credentials: this.credentials,
-      region: options.region,
-    });
-
     try {
-      const images = await ecr
+      const images = await this.ecr
         .describeImages({
           repositoryName: options.repositoryName,
           imageIds: options.imageIds,
@@ -48,6 +52,10 @@ class AwsHelper {
       throw e;
     }
     return true;
+  }
+
+  async ecrGetLoginPassword() {
+    return (await this.ecr.getAuthorizationToken().promise()).authorizationData;
   }
 }
 
