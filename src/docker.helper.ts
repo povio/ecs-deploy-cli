@@ -28,6 +28,18 @@ class Docker {
     }
     return this._version;
   }
+
+  async imageExists(imageName: string): Promise<boolean> {
+    const images = await dockerCommand(`images ${imageName}`, { echo: false });
+    return "images" in images && images.images.length > 0;
+  }
+
+  async imageBuild(imageName: string, release: string, dockerFile: string) {
+    const images = await dockerCommand(
+      `build --progress plain -t "${imageName}" -f "${dockerFile}" . --build-arg RELEASE="${release}"`,
+      { echo: true }
+    );
+  }
 }
 
 export default new Docker();

@@ -74,23 +74,22 @@ import { getEnv } from "./env.helper";
   if (DOCKER_PATH !== "Dockerfile") {
     cli.var("DOCKER_PATH", env.DOCKER_PATH, "Dockerfile");
   }
+
+  const IMAGE_NAME = `${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_REPO_NAME}:${RELEASE}`;
+
+  cli.banner("Build Step");
+
+  if (await docker.imageExists(IMAGE_NAME)) {
+    cli.info("Reusing docker image");
+  } else {
+    cli.info("Building docker image");
+    await docker.imageBuild(IMAGE_NAME, RELEASE, DOCKER_PATH);
+  }
 })().catch((e) => {
-  console.error(e);
+  cli.error(e);
   process.exit(1);
 });
 
-//
-// IMAGE_NAME="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$AWS_REPO_NAME:$RELEASE"
-// env_or_prompt "IMAGE_NAME" IMAGE_NAME
-//
-// log banner "DOCKER"
-//
-// if [[ $(docker images | grep "${RELEASE}") == "" ]]; then
-// log info "Building docker image .."
-// docker build --progress plain -t "$IMAGE_NAME" $DOCKER_PATH --build-arg RELEASE="$RELEASE"
-// else
-// log info "Reusing docker image .."
-// fi
 //
 // log banner "Setup AWS Docker Auth"
 // aws ecr get-login-password | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
