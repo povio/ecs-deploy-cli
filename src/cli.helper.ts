@@ -84,6 +84,10 @@ export class Cli {
       return response;
     }
   }
+
+  async confirm(message: string): Promise<boolean> {
+    return (await this.prompt(message, "yes")) === "yes";
+  }
 }
 
 export default new Cli();

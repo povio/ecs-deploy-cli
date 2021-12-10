@@ -41,6 +41,10 @@ class Docker {
     );
   }
 
+  async imagePush(imageName: string) {
+    await dockerCommand(`push ${imageName}`, { echo: true });
+  }
+
   async login(server: string, username: string, password: string) {
     const response = await dockerCommand(
       `-l "debug" login --username ${username} --password ${password} ${server}`,

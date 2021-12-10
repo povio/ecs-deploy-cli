@@ -98,6 +98,17 @@ import { getEnv } from "./env.helper";
   try {
     await docker.login(ecrCredentials.endpoint, "AWS", ecrCredentials.password);
     cli.info("AWS ECR Docker Login succeeded");
+
+    if (!cli.nonInteractive) {
+      if (!(await cli.confirm("Press enter to upload image to ECR..."))) {
+        cli.info("Canceled");
+        return;
+      }
+    }
+
+    await docker.imagePush(IMAGE_NAME);
+
+    cli.info("Done! Deploy the service with yarn run ecs:deploy");
   } catch (e) {
     throw e;
   } finally {
@@ -107,10 +118,3 @@ import { getEnv } from "./env.helper";
   cli.error(e);
   process.exit(1);
 });
-
-// log confirm "Press enter to upload image to ECR..." "Pushing image to ECR..."
-//
-// docker push "$IMAGE_NAME"
-//
-// log info "Done! Deploy the service with yarn run ecs:deploy or ./tools/ecs-deploy.sh"
-//
