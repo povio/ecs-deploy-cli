@@ -36,7 +36,7 @@ class Git {
         cli.warning("Detected changes in .git");
       } else {
         throw new Error(
-          "Detected changes in .git: Make sure the build is pristine"
+          "Detected changes in git state. Make sure the build is pristine"
         );
       }
     }

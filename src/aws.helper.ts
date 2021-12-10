@@ -54,8 +54,22 @@ class AwsHelper {
     return true;
   }
 
-  async ecrGetLoginPassword() {
-    return (await this.ecr.getAuthorizationToken().promise()).authorizationData;
+  async ecrGetDockerCredentials() {
+    const auth = (await this.ecr.getAuthorizationToken().promise())
+      .authorizationData[0];
+    let password;
+    try {
+      password = Buffer.from(auth.authorizationToken, "base64")
+        .toString("ascii")
+        .split(":")[1];
+    } catch (e) {
+      throw new Error("Could not decode authorizationData");
+    }
+    return {
+      password,
+      username: "AWS",
+      endpoint: auth.proxyEndpoint,
+    };
   }
 }
 

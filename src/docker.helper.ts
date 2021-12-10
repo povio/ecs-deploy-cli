@@ -35,10 +35,21 @@ class Docker {
   }
 
   async imageBuild(imageName: string, release: string, dockerFile: string) {
-    const images = await dockerCommand(
+    await dockerCommand(
       `build --progress plain -t "${imageName}" -f "${dockerFile}" . --build-arg RELEASE="${release}"`,
       { echo: true }
     );
+  }
+
+  async login(server: string, username: string, password: string) {
+    const response = await dockerCommand(
+      `-l "debug" login --username ${username} --password-stdin ${server}`,
+      { echo: false, stdin: password }
+    );
+    return response.login && response.login === "Login Succeeded";
+  }
+  async logout(server: string) {
+    await dockerCommand(`logout ${server}`, { echo: false });
   }
 }
 

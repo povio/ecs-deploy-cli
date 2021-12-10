@@ -48,7 +48,7 @@ export class Cli {
   }
 
   error(message: string) {
-    this.log(this.chalk.magenta(`[ERROR] ${message}`));
+    this.log(this.chalk.red(`[ERROR] ${message}`));
   }
 
   banner(message: string) {

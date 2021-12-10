@@ -92,17 +92,22 @@ import { getEnv } from "./env.helper";
   }
 
   cli.banner("Push step");
-  cli.info("Getting AWS Docker Auth");
-  await aws.ecrGetLoginPassword();
+  cli.info("Setting up AWS Docker Auth...");
+  const ecrCredentials = await aws.ecrGetDockerCredentials();
+
+  try {
+    await docker.login(ecrCredentials.endpoint, "AWS", ecrCredentials.password);
+    cli.info("AWS ECR Docker Login succeeded");
+  } catch (e) {
+    throw e;
+  } finally {
+    await docker.logout(ecrCredentials.endpoint);
+  }
 })().catch((e) => {
   cli.error(e);
   process.exit(1);
 });
 
-//
-// log banner "Setup AWS Docker Auth"
-// aws ecr get-login-password | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-//
 // log confirm "Press enter to upload image to ECR..." "Pushing image to ECR..."
 //
 // docker push "$IMAGE_NAME"
