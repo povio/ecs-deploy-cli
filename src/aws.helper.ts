@@ -1,9 +1,9 @@
 import * as AWS from "aws-sdk";
-import { SharedIniFileCredentials, Credentials, STS } from "aws-sdk";
+import { SharedIniFileCredentials, Credentials, ECR } from "aws-sdk";
 
 class AwsHelper {
   private credentials: Credentials;
-  private sts: STS;
+  private ecr: ECR;
 
   get version() {
     return (AWS as any).VERSION;
@@ -21,6 +21,33 @@ class AwsHelper {
         sessionToken: env.AWS_SESSION_TOKEN || undefined,
       });
     }
+  }
+
+  async ecsImageExists(options: {
+    region: string;
+    repositoryName: string;
+    imageIds: ECR.ImageIdentifierList;
+  }) {
+    const ecr = new ECR({
+      credentials: this.credentials,
+      region: options.region,
+    });
+
+    try {
+      const images = await ecr
+        .describeImages({
+          repositoryName: options.repositoryName,
+          imageIds: options.imageIds,
+        })
+        .promise();
+      console.log(JSON.stringify(images.imageDetails));
+    } catch (e) {
+      if (e.name === "ImageNotFoundException") {
+        return false;
+      }
+      throw e;
+    }
+    return true;
   }
 }
 

@@ -14,7 +14,8 @@ import * as process from "process";
 import { getEnv } from "./env.helper";
 
 (async function () {
-  cli.var("ECS_DEPLOY_CLI", ECS_DEPLOY_CLI);
+  cli.banner(`ECS Build ${ECS_DEPLOY_CLI}`);
+
   cli.var("PWD", cli.pwd);
   cli.var("NODE_VERSION", process.version);
 
@@ -48,30 +49,36 @@ import { getEnv } from "./env.helper";
     GIT_RELEASE
   );
 
-  const DOCKER_PATH = env.DOCKER_PATH || "Dockerfile";
-  if (DOCKER_PATH !== "Dockerfile") {
-    cli.var("DOCKER_PATH", env.DOCKER_PATH, "Dockerfile");
-  }
-
-  // load AWS credentails
-  await aws.init(env);
-
   // load ECR details
   const AWS_REGION = cli.promptVar("AWS_REGION", env.AWS_REGION);
   const AWS_ACCOUNT_ID = cli.promptVar("AWS_ACCOUNT_ID", env.AWS_ACCOUNT_ID);
   const AWS_REPO_NAME = cli.promptVar("AWS_REPO_NAME", env.AWS_REPO_NAME);
+
+  // load AWS credentials
+  await aws.init(env);
+
+  if (!env.SKIP_ECR_EXISTS_CHECK) {
+    if (
+      await aws.ecsImageExists({
+        region: AWS_REGION,
+        repositoryName: AWS_REPO_NAME,
+        imageIds: [{ imageTag: RELEASE }],
+      })
+    ) {
+      cli.info("Image already exists");
+      return;
+    }
+  }
+
+  const DOCKER_PATH = env.DOCKER_PATH || "Dockerfile";
+  if (DOCKER_PATH !== "Dockerfile") {
+    cli.var("DOCKER_PATH", env.DOCKER_PATH, "Dockerfile");
+  }
 })().catch((e) => {
   console.error(e);
   process.exit(1);
 });
 
-// if [ -z "$SKIP_ECR_EXISTS_CHECK" ]; then
-// aws ecr describe-images --repository-name="${AWS_REPO_NAME}" --image-ids=imageTag="${RELEASE}" 2>/dev/null && has_image=1 || has_image=0
-// if [[ $has_image == 1 ]]; then
-// log info "Image already exists"
-// exit 0
-// fi
-// fi
 //
 // IMAGE_NAME="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$AWS_REPO_NAME:$RELEASE"
 // env_or_prompt "IMAGE_NAME" IMAGE_NAME
