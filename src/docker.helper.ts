@@ -43,8 +43,8 @@ class Docker {
 
   async login(server: string, username: string, password: string) {
     const response = await dockerCommand(
-      `-l "debug" login --username ${username} --password-stdin ${server}`,
-      { echo: false, stdin: password }
+      `-l "debug" login --username ${username} --password ${password} ${server}`,
+      { echo: false }
     );
     return response.login && response.login === "Login Succeeded";
   }

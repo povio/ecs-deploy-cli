@@ -50,8 +50,5 @@
   "devDependencies": {
     "@swc/core": "^1.2.118",
     "ts-node": "^10.4.0"
-  },
-  "resolutions": {
-    "docker-cli-js@2.8.0": "patch:docker-cli-js@npm:2.8.0#.yarn/patches/docker-cli-js-npm-2.8.0-01a8fa61d6"
   }
 }
