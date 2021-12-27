@@ -5,7 +5,7 @@ const options = {
   echo: false,
 };
 
-export async function getDockerVersion() {
+export async function version() {
   try {
     this._version = (await dockerCommand("--version", options)).raw
       .replace(/"|\\n/, "")
@@ -21,7 +21,7 @@ export async function getDockerVersion() {
   return this._version;
 }
 
-export async function dockerImageExists(imageName: string): Promise<boolean> {
+export async function imageExists(imageName: string): Promise<boolean> {
   const images = await dockerCommand(`images ${imageName}`, { echo: false });
   if (process.env.VERBOSE) {
     cli.info(JSON.stringify(images));
@@ -29,7 +29,7 @@ export async function dockerImageExists(imageName: string): Promise<boolean> {
   return "images" in images && images.images.length > 0;
 }
 
-export async function dockerImageBuild(
+export async function imageBuild(
   imageName: string,
   release: string,
   dockerFile: string
@@ -40,11 +40,11 @@ export async function dockerImageBuild(
   );
 }
 
-export async function dockerImagePush(imageName: string) {
+export async function imagePush(imageName: string) {
   await dockerCommand(`push ${imageName}`, { echo: true });
 }
 
-export async function dockerLogin(
+export async function login(
   server: string,
   username: string,
   password: string
@@ -59,6 +59,15 @@ export async function dockerLogin(
   return response.login && response.login === "Login Succeeded";
 }
 
-export async function dockerLogout(server: string) {
+export async function logout(server: string) {
   await dockerCommand(`logout ${server}`, { echo: false });
 }
+
+export default {
+  version,
+  logout,
+  login,
+  imageBuild,
+  imageExists,
+  imagePush,
+};

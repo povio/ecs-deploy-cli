@@ -4,19 +4,12 @@
  */
 
 import yargs from "yargs";
-import cli, { variable } from "./cli.helper";
+import cli  from "./cli.helper";
 
 import { getIsPristine, getRelease } from "./git.helper";
 import { Options, Option, getYargsOptions } from "./yargs.helper";
 import { ecrGetDockerCredentials, ecrImageExists } from "./aws.helper";
-import docker, {
-  dockerImageBuild,
-  dockerImageExists,
-  dockerLogin,
-  dockerImagePush,
-  dockerLogout,
-  getDockerVersion,
-} from "./docker.helper";
+import docker from "./docker.helper";
 
 class EcsBuildOptions extends Options {
   @Option({ envAlias: "PWD" })
@@ -109,13 +102,13 @@ export const command: yargs.CommandModule = {
       cli.variable("DOCKER_PATH", argv.dockerPath, "Dockerfile");
     }
 
-    variable("DOCKER_VERSION", await getDockerVersion());
+    cli.variable("DOCKER_VERSION", await docker.version());
 
-    if (await dockerImageExists(imageName)) {
+    if (await docker.imageExists(imageName)) {
       cli.info("Reusing docker image");
     } else {
       cli.info("Building docker image");
-      await dockerImageBuild(imageName, argv.release, argv.dockerPath);
+      await docker.imageBuild(imageName, argv.release, argv.dockerPath);
     }
 
     cli.banner("Push step");
@@ -125,7 +118,7 @@ export const command: yargs.CommandModule = {
     });
 
     try {
-      await dockerLogin(
+      await docker.login(
         ecrCredentials.endpoint,
         "AWS",
         ecrCredentials.password
@@ -139,7 +132,7 @@ export const command: yargs.CommandModule = {
         }
       }
 
-      await dockerImagePush(imageName);
+      await docker.imagePush(imageName);
 
       cli.info(
         `Done! Deploy the service with yarn ecs:deploy --stage ${argv.stage}`
@@ -147,7 +140,7 @@ export const command: yargs.CommandModule = {
     } catch (e) {
       throw e;
     } finally {
-      await dockerLogout(ecrCredentials.endpoint);
+      await docker.logout(ecrCredentials.endpoint);
     }
   },
 };
