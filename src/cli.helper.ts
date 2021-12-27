@@ -4,7 +4,6 @@ import Prompt from "prompt-sync";
 import process from "process";
 import { getGitVersion } from "./git.helper";
 import docker from "./docker.helper";
-import aws from "./aws.helper";
 import { ECS_DEPLOY_CLI } from "./index";
 
 const chk = new chalk.Instance({ level: 2 });
@@ -95,7 +94,6 @@ export async function printEnvironment(argv: { pwd: string; stage?: string }) {
 
   await docker.init();
   variable("DOCKER_VERSION", docker.version);
-  variable("AWS_SDK_VERSION", aws.version);
 
   if (argv.stage) {
     // get current STAGE if set

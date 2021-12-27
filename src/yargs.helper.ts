@@ -42,31 +42,63 @@ export function getOptions<T>(target: any): Record<keyof T, IOptionProperties> {
   return options;
 }
 
-export class Options {
-  constructor(values: any, overrideEnv: boolean) {
-    if (!values.stage && process.env.STAGE) {
-      values.stage = process.env.STAGE;
-    }
+export function getYargsOptions<T>(target: any): Record<keyof T, YargsOptions> {
+  return Object.entries(getOptions(target)).reduce((a, [property, options]) => {
+    a[property] = Object.fromEntries(
+      Object.entries(options).filter(
+        ([optionName, optionValue]) =>
+          !["envAlias", "default"].includes(optionName)
+      )
+    );
+    return a;
+  }, {} as Record<keyof T, YargsOptions>);
+}
 
-    const environment = getEnv(values.pwd, values.stage, overrideEnv);
+export class Options {
+  stage: string;
+  pwd: string;
+
+  constructor(values: any, overrideEnv: boolean) {
+    this.stage = values.stage || process.env.STAGE;
+    this.pwd = values.pwd || process.cwd();
+
+    const environment = getEnv(this.pwd, this.stage, overrideEnv);
+
+    console.log({ values, environment });
+
     // override from ENV
-    for (const [name, { envAlias }] of Object.entries(
-      getOptions(this.constructor)
-    )) {
-      if (values[name]) {
-        this[name] = values[name];
+    for (const [name, o] of Object.entries(getOptions(this.constructor))) {
+      if (["pwd", "stage"].includes(name)) {
+        continue;
       }
-      if (envAlias) {
-        if (!this[name]) {
+      console.log([
+        name,
+        this[name],
+        o.envAlias,
+        o.envAlias ? environment[o.envAlias] : undefined,
+        o.default,
+      ]);
+      this[name] = values[name];
+      // fallback to env
+      if (o.envAlias) {
+        if (this[name] === undefined) {
           // get option from ENV
-          this[name] = environment[envAlias];
+          if (environment[o.envAlias] !== undefined) {
+            this[name] = environment[o.envAlias];
+          }
         } else {
-          // write option into ENV
+          // write option from yargs back into ENV
           if (overrideEnv) {
-            process.env[envAlias] = this[name];
+            process.env[o.envAlias] = this[name];
           }
         }
       }
+      // fallback to default
+      if (this[name] === undefined && o.default) {
+        // use default from yargs
+        this[name] = o.default;
+      }
     }
+    console.log(this);
   }
 }

@@ -12,6 +12,10 @@ import cli from "./cli.helper";
 export function getEnv(pwd: string, stage?: string, override = true) {
   let out: Record<string, any> = {};
 
+  if (!pwd) {
+    throw new Error("Path not set");
+  }
+
   if (stage) {
     if (fs.existsSync(path.join(pwd, `.env.${stage}`))) {
       // cli.info(`Loading .env.${stage}`);
@@ -56,19 +60,27 @@ export function getEnv(pwd: string, stage?: string, override = true) {
         cli.notice(`Can not find .env.${stage}.${service}`);
       }
     }
+  }
 
-    // display overrides
-    for (const [k, v] of Object.entries(process.env)) {
-      if (k in out && out[k] !== v) {
-        cli.variable(k, v, out[k]);
-      }
+  for (const [k, v] of Object.entries(process.env)) {
+    if (k in out && out[k] !== v) {
+      out[k] = process.env[k];
     }
   }
 
-  if (override) {
-    Object.assign(process.env, out);
-    return { ...process.env };
+  if (out["STAGE"] && out["STAGE"] !== stage) {
+    throw new Error("Stage was overwritten in config file");
+  }
+  if (out["PWD"] && out["PWD"] !== pwd) {
+    throw new Error("Path was overwritten in config file");
   }
 
-  return { ...out, ...process.env };
+  if (override) {
+    for (const [k, v] of Object.entries(out)) {
+      if (!(k in process.env)) {
+        process.env[k] = v;
+      }
+    }
+  }
+  return out;
 }

@@ -8,5 +8,6 @@ yargs(hideBin(process.argv))
   .version(ECS_DEPLOY_CLI)
   .command(buildCommand)
   .help()
+  .showHelpOnFail(false)
   .demandCommand()
   .parse();
