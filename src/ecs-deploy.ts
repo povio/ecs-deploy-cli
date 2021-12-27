@@ -80,14 +80,13 @@ export const command: yargs.CommandModule = {
 
     if (!argv.skipEcrExistsCheck) {
       if (
-        await ecrImageExists({
+        !(await ecrImageExists({
           region: argv.awsRegion,
           repositoryName: argv.ecrRepoName,
           imageIds: [{ imageTag: argv.release }],
-        })
+        }))
       ) {
-        cli.info("Image already exists");
-        return;
+        throw new Error("ECR image does not exist");
       }
     }
 
