@@ -4,13 +4,19 @@
  */
 
 import yargs from "yargs";
-import cli from "./cli.helper";
+import cli, { variable } from "./cli.helper";
 
 import { getIsPristine, getRelease } from "./git.helper";
 import { Options, Option, getYargsOptions } from "./yargs.helper";
 import { ecrGetDockerCredentials, ecrImageExists } from "./aws.helper";
-
-import docker from "./docker.helper";
+import docker, {
+  dockerImageBuild,
+  dockerImageExists,
+  dockerLogin,
+  dockerImagePush,
+  dockerLogout,
+  getDockerVersion,
+} from "./docker.helper";
 
 class EcsBuildOptions extends Options {
   @Option({ envAlias: "PWD" })
@@ -42,6 +48,9 @@ class EcsBuildOptions extends Options {
 
   @Option({ envAlias: "DOCKER_PATH", default: "Dockerfile" })
   dockerPath: string;
+
+  @Option({ envAlias: "VERBOSE", default: false })
+  verbose: boolean;
 }
 
 export const command: yargs.CommandModule = {
@@ -100,11 +109,13 @@ export const command: yargs.CommandModule = {
       cli.variable("DOCKER_PATH", argv.dockerPath, "Dockerfile");
     }
 
-    if (await docker.imageExists(imageName)) {
+    variable("DOCKER_VERSION", await getDockerVersion());
+
+    if (await dockerImageExists(imageName)) {
       cli.info("Reusing docker image");
     } else {
       cli.info("Building docker image");
-      await docker.imageBuild(imageName, argv.release, argv.dockerPath);
+      await dockerImageBuild(imageName, argv.release, argv.dockerPath);
     }
 
     cli.banner("Push step");
@@ -114,7 +125,7 @@ export const command: yargs.CommandModule = {
     });
 
     try {
-      await docker.login(
+      await dockerLogin(
         ecrCredentials.endpoint,
         "AWS",
         ecrCredentials.password
@@ -128,7 +139,7 @@ export const command: yargs.CommandModule = {
         }
       }
 
-      await docker.imagePush(imageName);
+      await dockerImagePush(imageName);
 
       cli.info(
         `Done! Deploy the service with yarn ecs:deploy --stage ${argv.stage}`
@@ -136,7 +147,7 @@ export const command: yargs.CommandModule = {
     } catch (e) {
       throw e;
     } finally {
-      await docker.logout(ecrCredentials.endpoint);
+      await dockerLogout(ecrCredentials.endpoint);
     }
   },
 };

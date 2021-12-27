@@ -3,7 +3,6 @@ import * as Console from "console";
 import Prompt from "prompt-sync";
 import process from "process";
 import { getGitVersion } from "./git.helper";
-import docker from "./docker.helper";
 import { ECS_DEPLOY_CLI } from "./index";
 
 const chk = new chalk.Instance({ level: 2 });
@@ -91,9 +90,6 @@ export async function printEnvironment(argv: { pwd: string; stage?: string }) {
   variable("NODE_VERSION", process.version);
 
   variable("GIT_CLI_VERSION", await getGitVersion(argv.pwd));
-
-  await docker.init();
-  variable("DOCKER_VERSION", docker.version);
 
   if (argv.stage) {
     // get current STAGE if set
