@@ -1,5 +1,6 @@
 import * as AWS from "aws-sdk";
-import { SharedIniFileCredentials, ECR } from "aws-sdk";
+import { SharedIniFileCredentials, ECR, ECS } from "aws-sdk";
+import cli from "./cli.helper";
 
 function getCredentials() {
   if (!!process.env.AWS_PROFILE) {
@@ -15,7 +16,7 @@ function getCredentials() {
   }
 }
 
-function getEcrCredentials(options: { region: string }) {
+function getEcrInstance(options: { region: string }) {
   return new ECR({
     credentials: getCredentials(),
     region: options.region,
@@ -27,7 +28,7 @@ export async function ecrImageExists(options: {
   repositoryName: string;
   imageIds: ECR.ImageIdentifierList;
 }) {
-  const ecr = getEcrCredentials({ region: options.region });
+  const ecr = getEcrInstance({ region: options.region });
   try {
     const images = await ecr
       .describeImages({
@@ -35,7 +36,9 @@ export async function ecrImageExists(options: {
         imageIds: options.imageIds,
       })
       .promise();
-    console.log(JSON.stringify(images.imageDetails));
+    if (process.env.VERBOSE) {
+      cli.info(JSON.stringify(images.imageDetails));
+    }
   } catch (e) {
     if (e.name === "ImageNotFoundException") {
       return false;
@@ -46,7 +49,7 @@ export async function ecrImageExists(options: {
 }
 
 export async function ecrGetDockerCredentials(options: { region: string }) {
-  const ecr = getEcrCredentials({ region: options.region });
+  const ecr = getEcrInstance({ region: options.region });
   const auth = (await ecr.getAuthorizationToken().promise())
     .authorizationData[0];
   let password;
@@ -62,4 +65,33 @@ export async function ecrGetDockerCredentials(options: { region: string }) {
     username: "AWS",
     endpoint: auth.proxyEndpoint,
   };
+}
+
+function getECSInstance(options: { region: string }) {
+  return new ECS({
+    credentials: getCredentials(),
+    region: options.region,
+  });
+}
+
+export async function ecsGetCurrentTaskDefinition(options: {
+  ecsTaskFamily: string;
+  region: string;
+}) {
+  const ecs = getECSInstance({ region: options.region });
+  try {
+    const taskDefinition = (
+      await ecs
+        .describeTaskDefinition({
+          taskDefinition: options.ecsTaskFamily,
+        })
+        .promise()
+    ).taskDefinition;
+    if (process.env.VERBOSE) {
+      cli.info(JSON.stringify(taskDefinition));
+    }
+    return taskDefinition;
+  } catch (e) {
+    throw e;
+  }
 }

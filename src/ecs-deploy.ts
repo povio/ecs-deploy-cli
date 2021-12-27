@@ -7,7 +7,7 @@ import yargs from "yargs";
 import { getRelease } from "./git.helper";
 import { getYargsOptions, Option, Options } from "./yargs.helper";
 import cli from "./cli.helper";
-import { ecrImageExists } from "./aws.helper";
+import { ecrImageExists, ecsGetCurrentTaskDefinition } from "./aws.helper";
 
 class EcsDeployOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -98,10 +98,14 @@ export const command: yargs.CommandModule = {
     // #   fi
     // # done < <(env)
     //
-    // # Get the latest task definition
-    // log info "Getting latest task definition.."
-    //
-    // CURRENT_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${ECS_TASK_FAMILY})
+
+    cli.info("Getting latest task definition..");
+
+    const currentTaskDefinition = await ecsGetCurrentTaskDefinition({
+      region: argv.awsRegion,
+      ecsTaskFamily: argv.ecsTaskFamily,
+    });
+
     //
     // # suggest version from task definition
     // SUGGESTED_VERSION=$(echo "$CURRENT_TASK_DEFINITION" | node -e "
