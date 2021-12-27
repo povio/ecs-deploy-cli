@@ -7,6 +7,7 @@ import yargs from "yargs";
 import { getRelease } from "./git.helper";
 import { getYargsOptions, Option, Options } from "./yargs.helper";
 import cli from "./cli.helper";
+import { ecrImageExists } from "./aws.helper";
 
 class EcsDeployOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -38,6 +39,9 @@ class EcsDeployOptions extends Options {
 
   @Option({ envAlias: "CI" })
   ci: boolean;
+
+  @Option({ envAlias: "SKIP_ECR_EXISTS_CHECK" })
+  skipEcrExistsCheck: boolean;
 
   @Option({ envAlias: "VERBOSE", default: false })
   verbose: boolean;
@@ -74,6 +78,19 @@ export const command: yargs.CommandModule = {
 
     cli.info(`Image name: ${imageName}`);
 
+    if (!argv.skipEcrExistsCheck) {
+      if (
+        await ecrImageExists({
+          region: argv.awsRegion,
+          repositoryName: argv.ecrRepoName,
+          imageIds: [{ imageTag: argv.release }],
+        })
+      ) {
+        cli.info("Image already exists");
+        return;
+      }
+    }
+
     // ## Get secret env
     // # while IFS='=' read -r name value ; do
     // #   if [[ $name == *'__FROM' ]]; then
@@ -81,17 +98,6 @@ export const command: yargs.CommandModule = {
     // #     log var "$__name" ${!name}
     // #   fi
     // # done < <(env)
-    //
-    // # Check if image exists
-    // if [ -z "$SKIP_ECR_EXISTS_CHECK" ]; then
-    //   log info "Checking if image exists..."
-    //   aws ecr describe-images --repository-name="${AWS_REPO_NAME}" --image-ids=imageTag="${RELEASE}" >/dev/null
-    //
-    //   if [[ $? != 0 ]]; then
-    //     log error "Image not found"
-    //     exit 1
-    //   fi
-    // fi
     //
     // # Get the latest task definition
     // log info "Getting latest task definition.."
