@@ -1,14 +1,24 @@
 import * as dotenv from "dotenv";
 import * as fs from "fs";
+import * as path from "path";
 import cli from "./cli.helper";
 
-export function getEnv(pwd: string, stage: string) {
+/**
+ * Get env from .env.${STAGE}(?:.(${SERVICE}|secrets))
+ * @param pwd
+ * @param stage
+ * @param override - Override the current process.env
+ */
+export function getEnv(pwd: string, stage?: string, override = true) {
   let out: Record<string, any> = {};
 
   if (stage) {
-    if (fs.existsSync(`.env.${stage}`)) {
+    if (fs.existsSync(path.join(pwd, `.env.${stage}`))) {
       // cli.info(`Loading .env.${stage}`);
-      out = { ...out, ...dotenv.parse(fs.readFileSync(`.env.${stage}`)) };
+      out = {
+        ...out,
+        ...dotenv.parse(fs.readFileSync(path.join(pwd, `.env.${stage}`))),
+      };
     } else {
       cli.notice(`Can not find .env.${stage}`);
     }
@@ -24,7 +34,9 @@ export function getEnv(pwd: string, stage: string) {
       }
       out = {
         ...out,
-        ...dotenv.parse(fs.readFileSync(`.env.${stage}.secrets`)),
+        ...dotenv.parse(
+          fs.readFileSync(path.join(pwd, `.env.${stage}.secrets`))
+        ),
       };
     }
 
@@ -36,7 +48,9 @@ export function getEnv(pwd: string, stage: string) {
         cli.info(`Loading .env.${stage}.${service}`);
         out = {
           ...out,
-          ...dotenv.parse(fs.readFileSync(`.env.${stage}.${service}`)),
+          ...dotenv.parse(
+            fs.readFileSync(path.join(pwd, `.env.${stage}.${service}`))
+          ),
         };
       } else {
         cli.notice(`Can not find .env.${stage}.${service}`);
@@ -46,11 +60,15 @@ export function getEnv(pwd: string, stage: string) {
     // display overrides
     for (const [k, v] of Object.entries(process.env)) {
       if (k in out && out[k] !== v) {
-        cli.var(k, v, out[k]);
+        cli.variable(k, v, out[k]);
       }
     }
   }
 
-  // override with the env
+  if (override) {
+    Object.assign(process.env, out);
+    return { ...process.env };
+  }
+
   return { ...out, ...process.env };
 }

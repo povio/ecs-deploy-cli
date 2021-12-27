@@ -1,59 +1,82 @@
 /*
  Build the Docker image and deploy it to ECR
   - Skip building if the release (git version) already exists
- Version: 0.1
  */
 
-const ECS_DEPLOY_CLI = "0.1";
-
+import yargs from "yargs";
 import cli from "./cli.helper";
+
+import { getIsPristine, getRelease } from "./git.helper";
+import { Options, Option, getOptions } from "./yargs.helper";
+
 import aws from "./aws.helper";
-import git from "./git.helper";
 import docker from "./docker.helper";
-import * as process from "process";
-import { getEnv } from "./env.helper";
 
-(async function () {
-  cli.banner(`ECS Build ${ECS_DEPLOY_CLI}`);
+class EcsBuildOptions extends Options {
+  @Option({ envAlias: "PWD", default: process.cwd() })
+  pwd: string;
 
-  cli.var("PWD", cli.pwd);
-  cli.var("NODE_VERSION", process.version);
+  @Option({ envAlias: "STAGE" })
+  stage: string;
 
-  await git.init();
-  cli.var("GIT_CLI_VERSION", git.version);
+  @Option({ envAlias: "RELEASE" })
+  release: string;
 
-  await docker.init();
-  cli.var("DOCKER_VERSION", docker.version);
-  cli.var("AWS_SDK_VERSION", aws.version);
+  @Option({ envAlias: "AWS_REPO_NAME", demandOption: true })
+  ecrRepoName: string;
 
-  cli.banner("Build Environment");
+  @Option({ envAlias: "AWS_REGION", demandOption: true })
+  awsRegion: string;
 
-  // get current STAGE if set
-  // CI would not use this for builds
-  if (process.env.STAGE) {
-    cli.var("STAGE", process.env.STAGE);
-  }
-  // get env from .env.${STAGE}(?:.(${SERVICE}|secrets))
-  const env = getEnv(cli.pwd, process.env.STAGE);
+  @Option({ envAlias: "AWS_ACCOUNT_ID", demandOption: true })
+  awsAccountId: string;
 
-  if (git.enabled) {
-    // prevent deploying uncommitted code
-    await git.verifyPristine(!!env.IGNORE_GIT_CHANGES);
-  }
+  @Option({ envAlias: "IGNORE_GIT_CHANGES" })
+  ignoreGitChanges: boolean;
 
-  // release sha
-  const GIT_RELEASE = await git.getRelease();
-  const RELEASE = cli.promptVar(
-    "RELEASE",
-    env.RELEASE || GIT_RELEASE,
-    GIT_RELEASE
-  );
+  @Option({ envAlias: "CI" })
+  ci: boolean;
+}
 
-  // load ECR details
-  const AWS_REGION = cli.promptVar("AWS_REGION", env.AWS_REGION);
-  const AWS_ACCOUNT_ID = cli.promptVar("AWS_ACCOUNT_ID", env.AWS_ACCOUNT_ID);
-  const AWS_REPO_NAME = cli.promptVar("AWS_REPO_NAME", env.AWS_REPO_NAME);
+export const command: yargs.CommandModule = {
+  command: "build",
+  describe: "Build the ECS Image",
+  builder: async (y) => {
+    return y.options(getOptions(EcsBuildOptions)).middleware(async (_argv) => {
+      const argv = new EcsBuildOptions(await _argv, true);
+      if (!argv.release) {
+        argv.release = await getRelease(argv.pwd);
+      }
+      return argv;
+    }, true);
+  },
+  handler: async (_argv) => {
+    const argv = (await _argv) as unknown as EcsBuildOptions;
 
+    await cli.printEnvironment(argv);
+
+    cli.banner("Build Environment");
+
+    const isPristine = await getIsPristine(argv.pwd);
+    if (isPristine) {
+      if (argv.ignoreGitChanges) {
+        cli.warning("Changes detected in .git");
+      } else {
+        throw new Error("Detected un-committed code in git");
+      }
+    }
+
+    cli.variable("RELEASE", argv.release);
+
+    // load ECR details
+    cli.variable("AWS_REGION", argv.awsRegion);
+    cli.variable("AWS_ACCOUNT_ID", argv.awsAccountId);
+    cli.variable("AWS_REPO_NAME", argv.ecrRepoName);
+  },
+};
+
+/*
+export async function build(argv: Arguments<{}>) {
   // load AWS credentials
   await aws.init({
     AWS_PROFILE: env.AWS_PROFILE,
@@ -114,7 +137,5 @@ import { getEnv } from "./env.helper";
   } finally {
     await docker.logout(ecrCredentials.endpoint);
   }
-})().catch((e) => {
-  cli.error(e);
-  process.exit(1);
-});
+}
+*/

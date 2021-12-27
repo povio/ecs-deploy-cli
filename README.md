@@ -13,6 +13,10 @@
 
 Use this tool to deploy a Docker image to ECR and ECS with CI or manually.
 
+## Goals and features of this tool
+
+- Use the common config structure `.${STAGE}.secrets`
+
 ## Install
 
 ```
