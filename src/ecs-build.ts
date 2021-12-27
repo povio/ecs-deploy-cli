@@ -12,13 +12,13 @@ import { ecrGetDockerCredentials, ecrImageExists } from "./aws.helper";
 import docker from "./docker.helper";
 
 class EcsBuildOptions extends Options {
-  @Option({ envAlias: "PWD" })
+  @Option({ envAlias: "PWD", demandOption: true })
   pwd: string;
 
   @Option({ envAlias: "STAGE" })
   stage: string;
 
-  @Option({ envAlias: "RELEASE" })
+  @Option({ envAlias: "RELEASE", demandOption: true })
   release: string;
 
   @Option({ envAlias: "AWS_REPO_NAME", demandOption: true })
