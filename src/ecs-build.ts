@@ -48,7 +48,7 @@ class EcsBuildOptions extends Options {
 
 export const command: yargs.CommandModule = {
   command: "build",
-  describe: "Build the ECS Image",
+  describe: "Build and Push the ECR Image",
   builder: async (y) => {
     return y
       .options(getYargsOptions(EcsBuildOptions))

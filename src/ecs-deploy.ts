@@ -21,6 +21,15 @@ class EcsDeployOptions extends Options {
   @Option({ envAlias: "AWS_REPO_NAME", demandOption: true })
   ecrRepoName: string;
 
+  @Option({ envAlias: "ECS_TASK_FAMILY", demandOption: true })
+  ecsTaskFamily: string;
+
+  @Option({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
+  ecsClusterName: string;
+
+  @Option({ envAlias: "ECS_SERVICE_NAME", demandOption: true })
+  ecsServiceName: string;
+
   @Option({ envAlias: "AWS_REGION", demandOption: true })
   awsRegion: string;
 
@@ -35,8 +44,8 @@ class EcsDeployOptions extends Options {
 }
 
 export const command: yargs.CommandModule = {
-  command: "build",
-  describe: "Build the ECS Image",
+  command: "deploy",
+  describe: "Deploy the ECR Image to ECS",
   builder: async (y) => {
     return y
       .options(getYargsOptions(EcsDeployOptions))
@@ -53,14 +62,18 @@ export const command: yargs.CommandModule = {
 
     await cli.printEnvironment(argv);
 
-    // env_or_prompt "AWS_REPO_NAME" AWS_REPO_NAME
-    // env_or_prompt "ECS_TASK_FAMILY" ECS_TASK_FAMILY
-    // env_or_prompt "ECS_CLUSTER_NAME" ECS_CLUSTER_NAME
-    // env_or_prompt "ECS_SERVICE_NAME" ECS_SERVICE_NAME
-    //
-    // IMAGE_NAME="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$AWS_REPO_NAME:$RELEASE"
-    // env_or_prompt "IMAGE_NAME" IMAGE_NAME
-    //
+    cli.banner("Deploy Environment");
+
+    cli.variable("AWS_REPO_NAME", argv.ecrRepoName);
+    cli.variable("ECS_TASK_FAMILY", argv.ecsTaskFamily);
+    cli.variable("ECS_CLUSTER_NAME", argv.ecsClusterName);
+    cli.variable("ECS_SERVICE_NAME", argv.ecsServiceName);
+
+    // load ECR details
+    const imageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${argv.release}`;
+
+    cli.info(`Image name: ${imageName}`);
+
     // ## Get secret env
     // # while IFS='=' read -r name value ; do
     // #   if [[ $name == *'__FROM' ]]; then
