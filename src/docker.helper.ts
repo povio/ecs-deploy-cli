@@ -13,7 +13,7 @@ export async function version() {
     this.enabled = true;
   } catch (e) {
     if (process.env.VERBOSE) {
-      cli.error(e.toString());
+      cli.verbose(e.toString());
     }
     this.enabled = false;
     return undefined;
@@ -24,7 +24,7 @@ export async function version() {
 export async function imageExists(imageName: string): Promise<boolean> {
   const images = await dockerCommand(`images ${imageName}`, { echo: false });
   if (process.env.VERBOSE) {
-    cli.info(JSON.stringify(images));
+    cli.verbose(JSON.stringify(images));
   }
   return "images" in images && images.images.length > 0;
 }
@@ -54,7 +54,7 @@ export async function login(
     { echo: false }
   );
   if (process.env.VERBOSE) {
-    cli.info(JSON.stringify(response));
+    cli.verbose(JSON.stringify(response));
   }
   return response.login && response.login === "Login Succeeded";
 }

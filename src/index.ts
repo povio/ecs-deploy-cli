@@ -15,7 +15,7 @@ yargs(hideBin(process.argv))
   .strictCommands(true)
   .showHelpOnFail(true)
   .fail((msg, err, yargs) => {
-    cli.error(msg);
+    if (msg) cli.error(msg);
     if (err) throw err;
     cli.info("Use '--help' for more info");
     process.exit(1);

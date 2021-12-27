@@ -4,6 +4,7 @@ import Prompt from "prompt-sync";
 import process from "process";
 import { getGitVersion } from "./git.helper";
 import { ECS_DEPLOY_CLI } from "./index";
+import { diffJson } from "diff";
 
 const chk = new chalk.Instance({ level: 2 });
 const log = Console.log;
@@ -31,6 +32,10 @@ export function variable(
 
 export function info(message: string) {
   log(`[INFO] ${message}`);
+}
+
+export function verbose(message: string) {
+  log(`[VERBOSE] ${message}`);
 }
 
 export function notice(message: string) {
@@ -98,6 +103,32 @@ export async function printEnvironment(argv: { pwd: string; stage?: string }) {
   }
 }
 
+export function printDiff(one: object, two: object) {
+  const line = 0;
+  for (const { value, added, removed } of diffJson(one, two)) {
+    if (added) {
+      console.log(chk.yellow(value.replace(/\n$/, "")));
+    } else if (removed) {
+      console.log(chk.green(value.replace(/\n$/, "")));
+    } else {
+      const text = value.replace(/\n$/, "").split("\n");
+      if (text.length < 6) {
+        console.log(value.replace(/\n$/, ""));
+      } else {
+        console.log(
+          [
+            text[0],
+            text[1],
+            "...",
+            text[text.length - 2],
+            text[text.length - 1],
+          ].join("\n")
+        );
+      }
+    }
+  }
+}
+
 export default {
   printEnvironment,
   confirm,
@@ -108,4 +139,6 @@ export default {
   error,
   banner,
   info,
+  verbose,
+  printDiff,
 };

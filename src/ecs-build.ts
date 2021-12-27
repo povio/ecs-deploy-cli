@@ -52,9 +52,6 @@ class EcsBuildOptions extends Options {
 
   @Option({ envAlias: "VERBOSE", default: false })
   verbose: boolean;
-
-  @Option({ envAlias: "VERSION" })
-  version: boolean;
 }
 
 export const command: yargs.CommandModule = {

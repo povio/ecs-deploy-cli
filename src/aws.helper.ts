@@ -37,7 +37,7 @@ export async function ecrImageExists(options: {
       })
       .promise();
     if (process.env.VERBOSE) {
-      cli.info(JSON.stringify(images.imageDetails));
+      cli.verbose(JSON.stringify(images.imageDetails));
     }
   } catch (e) {
     if (e.name === "ImageNotFoundException") {
@@ -88,7 +88,7 @@ export async function ecsGetCurrentTaskDefinition(options: {
         .promise()
     ).taskDefinition;
     if (process.env.VERBOSE) {
-      cli.info(JSON.stringify(taskDefinition));
+      cli.verbose(JSON.stringify(taskDefinition));
     }
     return taskDefinition;
   } catch (e) {
