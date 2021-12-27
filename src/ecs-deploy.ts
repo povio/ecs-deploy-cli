@@ -8,7 +8,13 @@ import semver from "semver";
 import { getRelease } from "./git.helper";
 import { getYargsOptions, Option, Options } from "./yargs.helper";
 import cli from "./cli.helper";
-import { ecrImageExists, ecsGetCurrentTaskDefinition } from "./aws.helper";
+import {
+  ecrImageExists,
+  ecsGetCurrentTaskDefinition,
+  ecsRegisterTaskDefinition,
+  ecsUpdateService,
+} from "./aws.helper";
+import { ECS } from ".store/aws-sdk-npm-2.1044.0-8f359c3c18";
 
 class EcsDeployOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -57,6 +63,13 @@ class EcsDeployOptions extends Options {
 
   @Option({ envAlias: "VERSION", type: "string" })
   ecsVersion: string;
+
+  @Option({
+    envAlias: "PREVIOUS_VERSION",
+    type: "string",
+    describe: "The version to base the next revision on",
+  })
+  ecsPreviousVersion: string;
 }
 
 export const command: yargs.CommandModule = {
@@ -107,9 +120,17 @@ export const command: yargs.CommandModule = {
 
     cli.info("Getting latest task definition..");
 
+    if (argv.ecsPreviousVersion) {
+      cli.notice(
+        `Basing next version on version ${argv.ecsTaskFamily}:${argv.ecsPreviousVersion}`
+      );
+    }
+
     const previousTaskDefinition = await ecsGetCurrentTaskDefinition({
       region: argv.awsRegion,
-      ecsTaskFamily: argv.ecsTaskFamily,
+      taskDefinition: argv.ecsPreviousVersion
+        ? `${argv.ecsTaskFamily}:${argv.ecsPreviousVersion}`
+        : argv.ecsTaskFamily,
     });
 
     if (previousTaskDefinition.containerDefinitions.length != 1) {
@@ -162,7 +183,7 @@ export const command: yargs.CommandModule = {
         acc[cur.name] = cur.valueFrom;
         return acc;
       },
-      {}
+      {} as Record<string, string>
     );
 
     // inject secret SSM/SM from ENV
@@ -172,7 +193,7 @@ export const command: yargs.CommandModule = {
       secretsDict[k.replace(/__FROM$/, "")] = v;
     }
 
-    const nextTaskDefinition = {
+    const taskDefinitionRequest: ECS.Types.RegisterTaskDefinitionRequest = {
       containerDefinitions: [
         {
           ...previousContainerDefinition,
@@ -200,8 +221,8 @@ export const command: yargs.CommandModule = {
 
     cli.banner("Container Definition Diff");
     cli.printDiff(
-      previousTaskDefinition.containerDefinitions,
-      nextTaskDefinition.containerDefinitions
+      previousContainerDefinition,
+      taskDefinitionRequest.containerDefinitions[0]
     );
 
     cli.banner("Update task definition & service");
@@ -215,20 +236,31 @@ export const command: yargs.CommandModule = {
 
     cli.info("Creating new task..");
 
-    //
-    // TASK_DEFINITION=$(aws ecs register-task-definition --family ${ECS_TASK_FAMILY} --cli-input-json "${NEW_TASK_DEFINITION}")
-    // TASK_REVISION=$(echo "$TASK_DEFINITION" | node -e "console.log(JSON.parse(require('fs').readFileSync(0, 'utf-8')).taskDefinition.revision);")
-    // TASK_DEFINITION_ARN_UPDATED=$(echo "$TASK_DEFINITION" | node -e "console.log(JSON.parse(require('fs').readFileSync(0, 'utf-8')).taskDefinition.taskDefinitionArn);")
-    //
-    // log info "Updating service task to revision $TASK_REVISION..."
-    //
-    // aws ecs update-service --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}" --task-definition ${TASK_DEFINITION_ARN_UPDATED} >/dev/null
-    //
+    const taskDefinition = await ecsRegisterTaskDefinition({
+      region: argv.awsRegion,
+      taskDefinitionRequest,
+    });
+
+    cli.banner("Task Definition Diff");
+    cli.printDiff(taskDefinition, previousTaskDefinition);
+
+    cli.info(`Updating service task to revision ${taskDefinition.revision}...`);
+
+    const service = await ecsUpdateService({
+      region: argv.awsRegion,
+      service: argv.ecsServiceName,
+      cluster: argv.ecsClusterName,
+      taskDefinition: taskDefinition.taskDefinitionArn,
+    });
+
+    // todo, wait for service to be healthy
     // if [ -z "$CI" ]; then
     //   log info "Waiting for service to deploy ..."
     //   aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}"
     //   log info "Deployed"
     // fi
-    //
+
+    // todo display service log
+    //  sometimes the deploy will fail, the log is hard to find to just print out the status here
   },
 };

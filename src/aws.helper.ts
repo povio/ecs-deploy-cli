@@ -75,7 +75,7 @@ function getECSInstance(options: { region: string }) {
 }
 
 export async function ecsGetCurrentTaskDefinition(options: {
-  ecsTaskFamily: string;
+  taskDefinition: string;
   region: string;
 }) {
   const ecs = getECSInstance({ region: options.region });
@@ -83,7 +83,7 @@ export async function ecsGetCurrentTaskDefinition(options: {
     const taskDefinition = (
       await ecs
         .describeTaskDefinition({
-          taskDefinition: options.ecsTaskFamily,
+          taskDefinition: options.taskDefinition,
         })
         .promise()
     ).taskDefinition;
@@ -91,6 +91,50 @@ export async function ecsGetCurrentTaskDefinition(options: {
       cli.verbose(JSON.stringify(taskDefinition));
     }
     return taskDefinition;
+  } catch (e) {
+    throw e;
+  }
+}
+
+export async function ecsRegisterTaskDefinition(options: {
+  region: string;
+  taskDefinitionRequest: ECS.Types.RegisterTaskDefinitionRequest;
+}) {
+  const ecs = getECSInstance({ region: options.region });
+  try {
+    const taskDefinition = (
+      await ecs.registerTaskDefinition(options.taskDefinitionRequest).promise()
+    ).taskDefinition;
+    if (process.env.VERBOSE) {
+      cli.verbose(JSON.stringify(taskDefinition));
+    }
+    return taskDefinition;
+  } catch (e) {
+    throw e;
+  }
+}
+
+export async function ecsUpdateService(options: {
+  region: string;
+  cluster: string;
+  service: string;
+  taskDefinition: string;
+}) {
+  const ecs = getECSInstance({ region: options.region });
+  try {
+    const service = (
+      await ecs
+        .updateService({
+          cluster: options.cluster,
+          service: options.service,
+          taskDefinition: options.taskDefinition,
+        })
+        .promise()
+    ).service;
+    if (process.env.VERBOSE) {
+      cli.verbose(JSON.stringify(service));
+    }
+    return service;
   } catch (e) {
     throw e;
   }
