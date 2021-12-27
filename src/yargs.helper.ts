@@ -15,10 +15,9 @@ export function Option(properties: IOptionProperties) {
         ...(Reflect.getMetadata(optionsKey, target) || {}),
         [propertyKey]: {
           ...properties,
-          describe:
-            properties.describe || properties.envAlias
-              ? `Override ${properties.envAlias}`
-              : undefined,
+          describe: properties.envAlias
+            ? `${properties.describe || ""} [${properties.envAlias}]`
+            : properties.describe,
           type:
             properties.type ||
             Reflect.getMetadata(
@@ -64,20 +63,11 @@ export class Options {
 
     const environment = getEnv(this.pwd, this.stage, overrideEnv);
 
-    console.log({ values, environment });
-
     // override from ENV
     for (const [name, o] of Object.entries(getOptions(this.constructor))) {
       if (["pwd", "stage"].includes(name)) {
         continue;
       }
-      console.log([
-        name,
-        this[name],
-        o.envAlias,
-        o.envAlias ? environment[o.envAlias] : undefined,
-        o.default,
-      ]);
       this[name] = values[name];
       // fallback to env
       if (o.envAlias) {
@@ -99,6 +89,5 @@ export class Options {
         this[name] = o.default;
       }
     }
-    console.log(this);
   }
 }

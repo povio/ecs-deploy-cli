@@ -19,6 +19,14 @@ class EcsDeployOptions extends Options {
   @Option({ envAlias: "RELEASE", demandOption: true })
   release: string;
 
+  @Option({
+    envAlias: "RELEASE_STRATEGY",
+    default: "gitsha",
+    choices: ["gitsha", "gitsha-stage"],
+    type: "string",
+  })
+  releaseStrategy: "gitsha" | "gitsha-stage";
+
   @Option({ envAlias: "AWS_REPO_NAME", demandOption: true })
   ecrRepoName: string;
 
@@ -56,7 +64,10 @@ export const command: yargs.CommandModule = {
       .middleware(async (_argv) => {
         const argv = new EcsDeployOptions(await _argv, true);
         if (!argv.release) {
-          argv.release = await getRelease(argv.pwd);
+          argv.release =
+            argv.releaseStrategy === "gitsha-stage"
+              ? `${await getRelease(argv.pwd)}-${argv.stage}`
+              : await getRelease(argv.pwd);
         }
         return argv;
       }, true);
