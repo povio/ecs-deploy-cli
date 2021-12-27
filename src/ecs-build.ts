@@ -4,7 +4,7 @@
  */
 
 import yargs from "yargs";
-import cli  from "./cli.helper";
+import cli from "./cli.helper";
 
 import { getIsPristine, getRelease } from "./git.helper";
 import { Options, Option, getYargsOptions } from "./yargs.helper";
