@@ -4,12 +4,14 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { command as buildCommand } from "./ecs-build";
 import { command as deployCommand } from "./ecs-deploy";
+import { command as watchCommand } from "./ecs-watch";
 import * as cli from "./cli.helper";
 
 yargs(hideBin(process.argv))
   .version(ECS_DEPLOY_CLI)
   .command(buildCommand)
   .command(deployCommand)
+  .command(watchCommand)
   .help()
   .demandCommand(1)
   .strictCommands(true)

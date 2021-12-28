@@ -6,7 +6,7 @@ import { getGitVersion } from "./git.helper";
 import { ECS_DEPLOY_CLI } from "./index";
 import { diffJson } from "diff";
 
-const chk = new chalk.Instance({ level: 2 });
+export const chk = new chalk.Instance({ level: 2 });
 const log = Console.log;
 const prompt = Prompt({ sigint: true });
 
@@ -145,5 +145,5 @@ export default {
   info,
   verbose,
   printDiff,
-  success
+  success,
 };

@@ -7,15 +7,15 @@ import semver from "semver";
 
 import { getRelease } from "./git.helper";
 import { getYargsOptions, Option, Options } from "./yargs.helper";
-import cli, { success } from "./cli.helper";
+import cli from "./cli.helper";
 import {
   ecrImageExists,
   ecsGetCurrentTaskDefinition,
   ecsRegisterTaskDefinition,
   ecsUpdateService,
   ecsWaitForServicesStable,
+  RegisterTaskDefinitionRequest,
 } from "./aws.helper";
-import { ECS } from ".store/aws-sdk-npm-2.1044.0-8f359c3c18";
 
 class EcsDeployOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -194,7 +194,7 @@ export const command: yargs.CommandModule = {
       secretsDict[k.replace(/__FROM$/, "")] = v;
     }
 
-    const taskDefinitionRequest: ECS.Types.RegisterTaskDefinitionRequest = {
+    const taskDefinitionRequest: RegisterTaskDefinitionRequest = {
       containerDefinitions: [
         {
           ...previousContainerDefinition,
