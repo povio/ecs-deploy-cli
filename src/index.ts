@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-export const ECS_DEPLOY_CLI = "0.8";
-
+import package from "./../package.json";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { command as buildCommand } from "./ecs-build";
@@ -10,7 +9,7 @@ import { command as watchCommand } from "./ecs-watch";
 import * as cli from "./cli.helper";
 
 yargs(hideBin(process.argv))
-  .version(ECS_DEPLOY_CLI)
+  .version(package.version)
   .command(buildCommand)
   .command(deployCommand)
   .command(watchCommand)
