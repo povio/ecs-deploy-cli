@@ -9,14 +9,15 @@ export async function getGitVersion(pwd: string) {
   }
 }
 
-export async function getIsPristine(pwd: string): Promise<boolean> {
+export async function getGitChanges(pwd: string): Promise<string> {
   try {
     const git = simpleGit(pwd);
-    const response: any = await git.raw("status", "--porcelain");
-    return response.porcelain.trim() !== "";
-  } catch (e) {
+    return git.raw("status", "--porcelain");
+  } catch (e){
+    console.log(e);
     return undefined;
   }
+
 }
 
 export async function getRelease(pwd: string): Promise<string> {
@@ -24,6 +25,7 @@ export async function getRelease(pwd: string): Promise<string> {
     const git = simpleGit(pwd);
     return await git.revparse("HEAD");
   } catch (e) {
+    console.log(e);
     return undefined;
   }
 }

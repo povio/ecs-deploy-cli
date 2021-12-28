@@ -7,18 +7,15 @@ const options = {
 
 export async function version() {
   try {
-    this._version = (await dockerCommand("--version", options)).raw
+    return (await dockerCommand("--version", options)).raw
       .replace(/"|\\n/, "")
       .trim();
-    this.enabled = true;
   } catch (e) {
     if (process.env.VERBOSE) {
-      cli.verbose(e.toString());
+      cli.verbose((e as string).toString());
     }
-    this.enabled = false;
     return undefined;
   }
-  return this._version;
 }
 
 export async function imageExists(imageName: string): Promise<boolean> {

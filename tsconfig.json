@@ -4,7 +4,10 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "outDir": "./bin",
+    "module": "commonjs",
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"],
   "ts-node": {

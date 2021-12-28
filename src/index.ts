@@ -1,4 +1,6 @@
-export const ECS_DEPLOY_CLI = "0.1";
+#!/usr/bin/env node
+
+export const ECS_DEPLOY_CLI = "0.8";
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";

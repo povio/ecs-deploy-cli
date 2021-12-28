@@ -1,5 +1,4 @@
-import * as AWS from "aws-sdk";
-import { SharedIniFileCredentials, ECR, ECS } from "aws-sdk";
+import { SharedIniFileCredentials, Credentials, ECR, ECS } from "aws-sdk";
 import cli from "./cli.helper";
 
 function getCredentials() {
@@ -8,7 +7,7 @@ function getCredentials() {
       profile: process.env.AWS_PROFILE,
     });
   } else {
-    return new AWS.Credentials({
+    return new Credentials({
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
       sessionToken: process.env.AWS_SESSION_TOKEN || undefined,
@@ -153,19 +152,19 @@ export function ecsWatch(
           message: string;
           createdAt: Date;
         }
-      | { type: "services"; services: AWS.ECS.Types.Services }
-      | { type: "deployment"; deployment: AWS.ECS.Types.Deployment }
+      | { type: "services"; services: ECS.Types.Services }
+      | { type: "deployment"; deployment: ECS.Types.Deployment }
   ) => void
 ): { stop: () => void; promise: Promise<void> } {
   const ecs = getECSInstance({ region: options.region });
   const showOlder = options.showOlder === undefined ? 5 : options.showOlder;
-  let lastEventDate;
+  let lastEventDate: Date;
 
   // todo, events might be lost here, make a lastEventDate per source
 
   const getService = async () => {
     try {
-      let passLastEventDate;
+      let passLastEventDate: Date;
       const services = await ecs
         .describeServices({
           services: [options.service],

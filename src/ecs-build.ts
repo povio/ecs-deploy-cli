@@ -6,7 +6,7 @@
 import yargs from "yargs";
 import cli from "./cli.helper";
 
-import { getIsPristine, getRelease } from "./git.helper";
+import { getGitChanges, getIsPristine, getRelease } from "./git.helper";
 import { Options, Option, getYargsOptions } from "./yargs.helper";
 import { ecrGetDockerCredentials, ecrImageExists } from "./aws.helper";
 import docker from "./docker.helper";
@@ -78,12 +78,18 @@ export const command: yargs.CommandModule = {
 
     cli.banner("Build Environment");
 
-    const isPristine = await getIsPristine(argv.pwd);
-    if (isPristine) {
+    const gitChanges = await getGitChanges(argv.pwd);
+    if (gitChanges !== "") {
       if (argv.ignoreGitChanges) {
         cli.warning("Changes detected in .git");
       } else {
-        throw new Error("Detected un-committed code in git");
+        if (gitChanges === undefined) {
+          cli.error("Error detecting Git");
+        } else {
+          cli.banner("Detected Changes in Git - Stage must be clean to build!");
+          console.log(gitChanges);
+        }
+        process.exit(1);
       }
     }
 
