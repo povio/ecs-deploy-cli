@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import package from "./../package.json";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { command as buildCommand } from "./ecs-build";
@@ -8,8 +7,10 @@ import { command as deployCommand } from "./ecs-deploy";
 import { command as watchCommand } from "./ecs-watch";
 import * as cli from "./cli.helper";
 
+const { version } = require("../package.json");
+
 yargs(hideBin(process.argv))
-  .version(package.version)
+  .version(version)
   .command(buildCommand)
   .command(deployCommand)
   .command(watchCommand)

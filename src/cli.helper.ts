@@ -3,8 +3,9 @@ import * as Console from "console";
 import Prompt from "prompt-sync";
 import process from "process";
 import { getGitVersion } from "./git.helper";
-import { ECS_DEPLOY_CLI } from "./index";
 import { diffJson } from "diff";
+
+const { version } = require("../package.json");
 
 export const chk = new chalk.Instance({ level: 2 });
 const log = Console.log;
@@ -93,7 +94,7 @@ export async function confirm(message: string): Promise<boolean> {
 }
 
 export async function printEnvironment(argv: { pwd: string; stage?: string }) {
-  banner(`ECS Build ${ECS_DEPLOY_CLI}`);
+  banner(`ECS Build ${version}`);
 
   variable("PWD", argv.pwd);
   variable("NODE_VERSION", process.version);
