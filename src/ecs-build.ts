@@ -4,9 +4,10 @@
  */
 
 import yargs from "yargs";
-import cli from "./cli.helper";
+import cli, { variable } from "./cli.helper";
 
 import { getGitChanges, getRelease } from "./git.helper";
+import { version as dockerVersion } from "./docker.helper";
 import { Options, Option, getYargsOptions } from "./yargs.helper";
 import { ecrGetDockerCredentials, ecrImageExists } from "./aws.helper";
 import docker from "./docker.helper";
@@ -75,6 +76,8 @@ export const command: yargs.CommandModule = {
     const argv = (await _argv) as unknown as EcsBuildOptions;
 
     await cli.printEnvironment(argv);
+
+    variable("DOCKER_VERSION", await dockerVersion());
 
     cli.banner("Build Environment");
 
