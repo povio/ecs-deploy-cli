@@ -7,12 +7,13 @@ import semver from "semver";
 
 import { getRelease } from "./git.helper";
 import { getYargsOptions, Option, Options } from "./yargs.helper";
-import cli from "./cli.helper";
+import cli, { success } from "./cli.helper";
 import {
   ecrImageExists,
   ecsGetCurrentTaskDefinition,
   ecsRegisterTaskDefinition,
   ecsUpdateService,
+  ecsWaitForServicesStable,
 } from "./aws.helper";
 import { ECS } from ".store/aws-sdk-npm-2.1044.0-8f359c3c18";
 
@@ -253,14 +254,36 @@ export const command: yargs.CommandModule = {
       taskDefinition: taskDefinition.taskDefinitionArn,
     });
 
-    // todo, wait for service to be healthy
-    // if [ -z "$CI" ]; then
-    //   log info "Waiting for service to deploy ..."
-    //   aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}"
-    //   log info "Deployed"
-    // fi
+    if (!argv.ci) {
+      cli.success(`Service updated. You can exit by using CTRL-C now.`);
 
-    // todo display service log
-    //  sometimes the deploy will fail, the log is hard to find to just print out the status here
+      cli.banner("Service Monitor");
+
+      await ecsWaitForServicesStable({
+        region: argv.awsRegion,
+        service: argv.ecsServiceName,
+        cluster: argv.ecsClusterName,
+      }).then(({ services, failures }) => {
+        failures.forEach(({ detail, arn, reason }) =>
+          cli.warning(`[Monitor] ${arn} ${reason} ${detail}`)
+        );
+        for (const {
+          serviceName,
+          status,
+          taskDefinition,
+          events,
+          deployments,
+        } of services) {
+          cli.notice(`[Monitor] ${serviceName} ${taskDefinition} ${status}`);
+          cli.info(`[Monitor] Recent Events`);
+          events.forEach((x) => {
+            cli.info(`${x.createdAt} ${x.message}`);
+          });
+          deployments.forEach((x) => {
+            cli.notice(`${x.taskDefinition} ${x.rolloutState} `);
+          });
+        }
+      });
+    }
   },
 };

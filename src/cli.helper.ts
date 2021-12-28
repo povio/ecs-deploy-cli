@@ -42,6 +42,10 @@ export function notice(message: string) {
   log(chk.magenta(`[NOTICE] ${message}`));
 }
 
+export function success(message: string) {
+  log(chk.green(`[SUCCESS] ${message}`));
+}
+
 export function warning(message: string) {
   log(chk.red(`[WARNING] ${message}`));
 }
@@ -141,4 +145,5 @@ export default {
   info,
   verbose,
   printDiff,
+  success
 };

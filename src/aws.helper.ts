@@ -79,21 +79,17 @@ export async function ecsGetCurrentTaskDefinition(options: {
   region: string;
 }) {
   const ecs = getECSInstance({ region: options.region });
-  try {
-    const taskDefinition = (
-      await ecs
-        .describeTaskDefinition({
-          taskDefinition: options.taskDefinition,
-        })
-        .promise()
-    ).taskDefinition;
-    if (process.env.VERBOSE) {
-      cli.verbose(JSON.stringify(taskDefinition));
-    }
-    return taskDefinition;
-  } catch (e) {
-    throw e;
+  const taskDefinition = (
+    await ecs
+      .describeTaskDefinition({
+        taskDefinition: options.taskDefinition,
+      })
+      .promise()
+  ).taskDefinition;
+  if (process.env.VERBOSE) {
+    cli.verbose(JSON.stringify(taskDefinition));
   }
+  return taskDefinition;
 }
 
 export async function ecsRegisterTaskDefinition(options: {
@@ -101,17 +97,14 @@ export async function ecsRegisterTaskDefinition(options: {
   taskDefinitionRequest: ECS.Types.RegisterTaskDefinitionRequest;
 }) {
   const ecs = getECSInstance({ region: options.region });
-  try {
-    const taskDefinition = (
-      await ecs.registerTaskDefinition(options.taskDefinitionRequest).promise()
-    ).taskDefinition;
-    if (process.env.VERBOSE) {
-      cli.verbose(JSON.stringify(taskDefinition));
-    }
-    return taskDefinition;
-  } catch (e) {
-    throw e;
+
+  const taskDefinition = (
+    await ecs.registerTaskDefinition(options.taskDefinitionRequest).promise()
+  ).taskDefinition;
+  if (process.env.VERBOSE) {
+    cli.verbose(JSON.stringify(taskDefinition));
   }
+  return taskDefinition;
 }
 
 export async function ecsUpdateService(options: {
@@ -121,21 +114,35 @@ export async function ecsUpdateService(options: {
   taskDefinition: string;
 }) {
   const ecs = getECSInstance({ region: options.region });
-  try {
-    const service = (
-      await ecs
-        .updateService({
-          cluster: options.cluster,
-          service: options.service,
-          taskDefinition: options.taskDefinition,
-        })
-        .promise()
-    ).service;
-    if (process.env.VERBOSE) {
-      cli.verbose(JSON.stringify(service));
-    }
-    return service;
-  } catch (e) {
-    throw e;
+  const service = (
+    await ecs
+      .updateService({
+        cluster: options.cluster,
+        service: options.service,
+        taskDefinition: options.taskDefinition,
+      })
+      .promise()
+  ).service;
+  if (process.env.VERBOSE) {
+    cli.verbose(JSON.stringify(service));
   }
+  return service;
+}
+
+export async function ecsWaitForServicesStable(options: {
+  region: string;
+  cluster: string;
+  service: string;
+}) {
+  const ecs = getECSInstance({ region: options.region });
+  const response = await ecs
+    .waitFor("servicesStable", {
+      cluster: options.cluster,
+      services: [options.service],
+    })
+    .promise();
+  if (process.env.VERBOSE) {
+    cli.verbose(JSON.stringify(response));
+  }
+  return response;
 }
