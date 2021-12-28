@@ -40,6 +40,8 @@ AWS_SECRET_ACCESS_KEY=
 
 ## Running
 
+```
 yarn ecs-build --stage my-stage
 yarn ecs-deploy --stage my-stage
 yarn ecs-watch --stage my-stage
+```
