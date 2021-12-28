@@ -6,7 +6,7 @@
 import yargs from "yargs";
 import cli from "./cli.helper";
 
-import { getGitChanges, getIsPristine, getRelease } from "./git.helper";
+import { getGitChanges, getRelease } from "./git.helper";
 import { Options, Option, getYargsOptions } from "./yargs.helper";
 import { ecrGetDockerCredentials, ecrImageExists } from "./aws.helper";
 import docker from "./docker.helper";
