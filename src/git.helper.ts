@@ -13,7 +13,6 @@ export async function getIsPristine(pwd: string): Promise<boolean> {
   try {
     const git = simpleGit(pwd);
     const response: any = await git.raw("status", "--porcelain");
-    console.log(response);
     return response.porcelain.trim() !== "";
   } catch (e) {
     return undefined;
