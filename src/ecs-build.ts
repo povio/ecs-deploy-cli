@@ -152,7 +152,7 @@ export const command: yargs.CommandModule = {
       await docker.imagePush(imageName);
 
       cli.info(
-        `Done! Deploy the service with yarn ecs:deploy --stage ${argv.stage}`
+        `Done! Deploy the service with yarn ecs-deploy-cli --stage ${argv.stage}`
       );
     } catch (e) {
       throw e;
