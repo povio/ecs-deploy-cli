@@ -13,11 +13,10 @@ export async function getGitChanges(pwd: string): Promise<string> {
   try {
     const git = simpleGit(pwd);
     return git.raw("status", "--porcelain");
-  } catch (e){
+  } catch (e) {
     console.log(e);
     return undefined;
   }
-
 }
 
 export async function getRelease(pwd: string): Promise<string> {
