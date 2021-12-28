@@ -22,6 +22,8 @@ Use this tool to deploy a Docker image to ECR and ECS with CI or manually.
 yarn add ecs-deploy-cli@poviolabs/ecs-deploy-cli
 ```
 
+## Configure
+
 .env.${STAGE}
 ```dotenv
 AWS_ACCOUNT_ID=
@@ -34,3 +36,10 @@ AWS_REPO_NAME=
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 ```
+
+
+## Running
+
+yarn ecs-build --stage my-stage
+yarn ecs-deploy --stage my-stage
+yarn ecs-watch --stage my-stage

@@ -1,10 +1,6 @@
 import * as AWS from "aws-sdk";
 import { SharedIniFileCredentials, ECR, ECS } from "aws-sdk";
 import cli from "./cli.helper";
-import {
-  Deployment,
-  Services,
-} from ".store/aws-sdk-npm-2.1044.0-8f359c3c18/clients/ecs";
 
 function getCredentials() {
   if (!!process.env.AWS_PROFILE) {
@@ -136,24 +132,6 @@ export async function ecsUpdateService(options: {
   return service;
 }
 
-export async function ecsWaitForServicesStable(options: {
-  region: string;
-  cluster: string;
-  service: string;
-}) {
-  const ecs = getECSInstance({ region: options.region });
-  const response = await ecs
-    .waitFor("servicesStable", {
-      cluster: options.cluster,
-      services: [options.service],
-    })
-    .promise();
-  if (process.env.VERBOSE) {
-    cli.verbose(JSON.stringify(response));
-  }
-  return response;
-}
-
 /**
  * Periodically check ECS Service and Cluster for new messages
  * @param options
@@ -164,7 +142,7 @@ export function ecsWatch(
     region: string;
     cluster: string;
     service: string;
-    delay: number;
+    delay?: number;
     showOlder?: number;
   },
   callback: (
@@ -175,7 +153,8 @@ export function ecsWatch(
           message: string;
           createdAt: Date;
         }
-      | { type: "deployment"; deployment: Deployment }
+      | { type: "services"; services: AWS.ECS.Types.Services }
+      | { type: "deployment"; deployment: AWS.ECS.Types.Deployment }
   ) => void
 ): { stop: () => void; promise: Promise<void> } {
   const ecs = getECSInstance({ region: options.region });
@@ -193,10 +172,16 @@ export function ecsWatch(
           cluster: options.cluster,
         })
         .promise();
+
+      callback({ type: "services", services: services.services });
+
       services.services.forEach((s) => {
         s.deployments.forEach((d) => {
-          if (!lastEventDate || d.updatedAt > lastEventDate) {
+          if (d.updatedAt > lastEventDate) {
             callback({ type: "deployment", deployment: d });
+            if (!passLastEventDate || passLastEventDate < d.updatedAt) {
+              passLastEventDate = d.updatedAt;
+            }
           }
         });
         if (s.events.length > 0) {

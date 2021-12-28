@@ -49,21 +49,20 @@ export const command: yargs.CommandModule = {
         region: argv.awsRegion,
         cluster: argv.ecsClusterName,
         service: argv.ecsServiceName,
-        delay: argv.delay,
       },
       (message) => {
         switch (message.type) {
           case "deployment":
             const d = message.deployment;
             console.log(
-              `[${chk.yellow(d.taskDefinition)} ${d.status} Running ${
-                d.runningCount
-              }/${d.desiredCount} Pending ${d.pendingCount} Rollout ${
-                d.rolloutState
-              }`
+              `[${chk.yellow(d.taskDefinition.replace(/^[^\/]+/, ""))} ${
+                d.status
+              } Running ${d.runningCount}/${d.desiredCount} Pending ${
+                d.pendingCount
+              } Rollout ${d.rolloutState}`
             );
             break;
-          default:
+          case "message":
             console.log(
               `[${chk.magenta(
                 message.source

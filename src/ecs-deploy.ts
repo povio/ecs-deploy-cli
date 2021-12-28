@@ -7,13 +7,13 @@ import semver from "semver";
 
 import { getRelease } from "./git.helper";
 import { getYargsOptions, Option, Options } from "./yargs.helper";
-import cli from "./cli.helper";
+import cli, { chk } from "./cli.helper";
 import {
   ecrImageExists,
   ecsGetCurrentTaskDefinition,
   ecsRegisterTaskDefinition,
   ecsUpdateService,
-  ecsWaitForServicesStable,
+  ecsWatch,
   RegisterTaskDefinitionRequest,
 } from "./aws.helper";
 
@@ -247,7 +247,7 @@ export const command: yargs.CommandModule = {
 
     cli.info(`Updating service task to revision ${taskDefinition.revision}...`);
 
-    const service = await ecsUpdateService({
+    await ecsUpdateService({
       region: argv.awsRegion,
       service: argv.ecsServiceName,
       cluster: argv.ecsClusterName,
@@ -259,31 +259,49 @@ export const command: yargs.CommandModule = {
 
       cli.banner("Service Monitor");
 
-      await ecsWaitForServicesStable({
-        region: argv.awsRegion,
-        service: argv.ecsServiceName,
-        cluster: argv.ecsClusterName,
-      }).then(({ services, failures }) => {
-        failures.forEach(({ detail, arn, reason }) =>
-          cli.warning(`[Monitor] ${arn} ${reason} ${detail}`)
-        );
-        for (const {
-          serviceName,
-          status,
-          taskDefinition,
-          events,
-          deployments,
-        } of services) {
-          cli.notice(`[Monitor] ${serviceName} ${taskDefinition} ${status}`);
-          cli.info(`[Monitor] Recent Events`);
-          events.forEach((x) => {
-            cli.info(`${x.createdAt} ${x.message}`);
-          });
-          deployments.forEach((x) => {
-            cli.notice(`${x.taskDefinition} ${x.rolloutState} `);
-          });
+      const watch = ecsWatch(
+        {
+          region: argv.awsRegion,
+          cluster: argv.ecsClusterName,
+          service: argv.ecsServiceName,
+        },
+        (message) => {
+          switch (message.type) {
+            case "services":
+              if (
+                !message.services.some((x) =>
+                  x.deployments.some(
+                    (d) =>
+                      d.desiredCount !== d.runningCount ||
+                      d.rolloutState !== "COMPLETED"
+                  )
+                )
+              ) {
+                cli.success("Service successfully deployed!");
+                watch.stop();
+              }
+              break;
+            case "deployment":
+              const d = message.deployment;
+              console.log(
+                `[${chk.yellow(d.taskDefinition.replace(/^[^\/]+/, ""))} ${
+                  d.status
+                } Running ${d.runningCount}/${d.desiredCount} Pending ${
+                  d.pendingCount
+                } Rollout ${d.rolloutState}`
+              );
+              break;
+            default:
+              console.log(
+                `[${chk.magenta(
+                  message.source
+                )} ${message.createdAt.toISOString()}] ${message.message}`
+              );
+              break;
+          }
         }
-      });
+      );
+      await watch.promise;
     }
   },
 };
