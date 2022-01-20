@@ -1,6 +1,6 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "0.10.8",
+  "version": "0.10.9",
   "packageManager": "yarn@3.1.1",
   "scripts": {
     "lint": "exlint --fix",

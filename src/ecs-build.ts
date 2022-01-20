@@ -157,7 +157,7 @@ export const command: yargs.CommandModule = {
       cli.info("Reusing docker image");
     } else {
       cli.info("Building docker image");
-      await docker.imageBuild(imageName, argv.release, argv.dockerPath);
+      await docker.imageBuild(imageName, argv.release, argv.dockerPath, previousImageName);
     }
 
     cli.banner("Push step");
