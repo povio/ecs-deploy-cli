@@ -81,6 +81,10 @@ export const command: yargs.CommandModule = {
 
     cli.banner("Build Environment");
 
+    if (!argv.ci) {
+      cli.info("Running Interactively");
+    }
+
     const gitChanges = await getGitChanges(argv.pwd);
     if (gitChanges !== "") {
       if (argv.ignoreGitChanges) {

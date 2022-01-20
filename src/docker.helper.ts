@@ -2,7 +2,7 @@ import { dockerCommand } from "docker-cli-js";
 import cli from "./cli.helper";
 
 const options = {
-  echo: false,
+  echo: true,
   // pass DOCKER_ env into the command to set remote docker machines
   env: Object.entries(process.env)
     .filter((x) => x[0].startsWith("DOCKER_"))
@@ -26,7 +26,10 @@ export async function version() {
 }
 
 export async function imageExists(imageName: string): Promise<boolean> {
-  const images = await dockerCommand(`images ${imageName}`, options);
+  const images = await dockerCommand(`images ${imageName}`, {
+    ...options,
+    echo: false,
+  });
   if (process.env.VERBOSE) {
     cli.verbose(JSON.stringify(images));
   }
@@ -40,7 +43,9 @@ export async function imageBuild(
   previousImageName?: string
 ) {
   await dockerCommand(
-    `build --progress plain -t "${imageName}" -f "${dockerFile}" ${previousImageName?`--cache-from ${previousImageName}`:""} . --build-arg RELEASE="${release}"`,
+    `build --progress plain -t "${imageName}" -f "${dockerFile}" ${
+      previousImageName ? `--cache-from ${previousImageName}` : ""
+    } . --build-arg RELEASE="${release}"`,
     options
   );
 }
@@ -60,7 +65,7 @@ export async function login(
 ) {
   const response = await dockerCommand(
     `-l "debug" login --username ${username} --password ${password} ${server}`,
-    options
+    { ...options, echo: false }
   );
   if (process.env.VERBOSE) {
     cli.verbose(JSON.stringify(response));
@@ -69,7 +74,7 @@ export async function login(
 }
 
 export async function logout(server: string) {
-  await dockerCommand(`logout ${server}`, options);
+  await dockerCommand(`logout ${server}`, { ...options, echo: false });
 }
 
 export default {
@@ -80,5 +85,5 @@ export default {
   imageExists,
   imagePush,
   imagePull,
-  options
+  options,
 };

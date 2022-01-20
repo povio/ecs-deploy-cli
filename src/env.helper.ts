@@ -7,9 +7,9 @@ import cli from "./cli.helper";
  * Get env from .env.${STAGE}(?:.(${SERVICE}|secrets))
  * @param pwd
  * @param stage
- * @param override - Override the current process.env
+ * @param append - Append to the current process.env
  */
-export function getEnv(pwd: string, stage?: string, override = true) {
+export function getEnv(pwd: string, stage?: string, append = true) {
   let out: Record<string, any> = {};
 
   if (!pwd) {
@@ -62,11 +62,8 @@ export function getEnv(pwd: string, stage?: string, override = true) {
     }
   }
 
-  for (const [k, v] of Object.entries(process.env)) {
-    if (k in out && out[k] !== v) {
-      out[k] = process.env[k];
-    }
-  }
+  // load in process.env, overwriting anything we read from the .env files
+  out = { ...out, ...process.env };
 
   if (out["STAGE"] && out["STAGE"] !== stage) {
     throw new Error("Stage was overwritten in config file");
@@ -75,7 +72,7 @@ export function getEnv(pwd: string, stage?: string, override = true) {
     throw new Error("Path was overwritten in config file");
   }
 
-  if (override) {
+  if (append) {
     for (const [k, v] of Object.entries(out)) {
       if (!(k in process.env)) {
         process.env[k] = v;
