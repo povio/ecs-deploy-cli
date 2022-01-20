@@ -72,7 +72,7 @@ export async function ecrGetLatestImageTag(options: {
       )
     ).imageDetails;
     images.sort((a, b) => {
-      return b.imagePushedAt > a.imagePushedAt ? -1 : 1;
+      return b.imagePushedAt < a.imagePushedAt ? -1 : 1;
     });
     return images[0].imageTags[0];
   } catch (e) {
