@@ -4,16 +4,14 @@
  */
 
 import yargs from "yargs";
-import cli, { variable, chk } from "./cli.helper";
+import cli, { chk } from "./cli.helper";
 
 import { getGitChanges, getRelease } from "./git.helper";
-import { version as dockerVersion } from "./docker.helper";
 import { Options, Option, getYargsOptions } from "./yargs.helper";
 import {
   ecrGetDockerCredentials,
   ecrGetLatestImageTag,
   ecrImageExists,
-  ecsGetCurrentTaskDefinition,
 } from "./aws.helper";
 import docker from "./docker.helper";
 
@@ -81,8 +79,6 @@ export const command: yargs.CommandModule = {
 
     await cli.printEnvironment(argv);
 
-    variable("DOCKER_VERSION", await dockerVersion());
-
     cli.banner("Build Environment");
 
     const gitChanges = await getGitChanges(argv.pwd);
@@ -101,6 +97,11 @@ export const command: yargs.CommandModule = {
     }
 
     cli.variable("RELEASE", argv.release);
+
+    cli.info(`Docker Version: ${await docker.version()}`);
+    for (const [k, v] of Object.entries(docker.options.env)) {
+      cli.variable(k, v);
+    }
 
     // load ECR details
     const imageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${argv.release}`;
@@ -124,14 +125,13 @@ export const command: yargs.CommandModule = {
       cli.info("AWS ECR Docker Login succeeded");
     };
 
-
     if (!argv.skipEcrExistsCheck) {
       if (
-          await ecrImageExists({
-            region: argv.awsRegion,
-            repositoryName: argv.ecrRepoName,
-            imageIds: [{imageTag: argv.release}],
-          })
+        await ecrImageExists({
+          region: argv.awsRegion,
+          repositoryName: argv.ecrRepoName,
+          imageIds: [{ imageTag: argv.release }],
+        })
       ) {
         cli.info("Image already exists");
         return;
@@ -145,7 +145,7 @@ export const command: yargs.CommandModule = {
 
       const previousImageTag = await ecrGetLatestImageTag({
         region: argv.awsRegion,
-        repositoryName: argv.ecrRepoName
+        repositoryName: argv.ecrRepoName,
       });
       previousImageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${previousImageTag}`;
       cli.info(`Using cache image: ${previousImageName}`);
@@ -155,16 +155,19 @@ export const command: yargs.CommandModule = {
     cli.banner("Build Step");
 
     if (argv.dockerPath !== "Dockerfile") {
-      cli.variable("DOCKER_PATH", argv.dockerPath, "Dockerfile");
+      cli.notice(`Dockerfile path: ${ argv.dockerPath}`);
     }
-
-    cli.variable("DOCKER_VERSION", await docker.version());
 
     if (await docker.imageExists(imageName)) {
       cli.info("Reusing docker image");
     } else {
       cli.info("Building docker image");
-      await docker.imageBuild(imageName, argv.release, argv.dockerPath, previousImageName);
+      await docker.imageBuild(
+        imageName,
+        argv.release,
+        argv.dockerPath,
+        previousImageName
+      );
     }
 
     cli.banner("Push step");

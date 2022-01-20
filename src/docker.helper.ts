@@ -26,7 +26,7 @@ export async function version() {
 }
 
 export async function imageExists(imageName: string): Promise<boolean> {
-  const images = await dockerCommand(`images ${imageName}`, { echo: false });
+  const images = await dockerCommand(`images ${imageName}`, options);
   if (process.env.VERBOSE) {
     cli.verbose(JSON.stringify(images));
   }
@@ -41,16 +41,16 @@ export async function imageBuild(
 ) {
   await dockerCommand(
     `build --progress plain -t "${imageName}" -f "${dockerFile}" ${previousImageName?`--cache-from ${previousImageName}`:""} . --build-arg RELEASE="${release}"`,
-    { echo: true }
+    options
   );
 }
 
 export async function imagePush(imageName: string) {
-  await dockerCommand(`push ${imageName}`, { echo: true });
+  await dockerCommand(`push ${imageName}`, options);
 }
 
 export async function imagePull(imageName: string) {
-  await dockerCommand(`pull ${imageName}`, { echo: true });
+  await dockerCommand(`pull ${imageName}`, options);
 }
 
 export async function login(
@@ -60,7 +60,7 @@ export async function login(
 ) {
   const response = await dockerCommand(
     `-l "debug" login --username ${username} --password ${password} ${server}`,
-    { echo: false }
+    options
   );
   if (process.env.VERBOSE) {
     cli.verbose(JSON.stringify(response));
@@ -69,7 +69,7 @@ export async function login(
 }
 
 export async function logout(server: string) {
-  await dockerCommand(`logout ${server}`, { echo: false });
+  await dockerCommand(`logout ${server}`, options);
 }
 
 export default {
@@ -80,4 +80,5 @@ export default {
   imageExists,
   imagePush,
   imagePull,
+  options
 };
