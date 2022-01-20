@@ -11,6 +11,7 @@ const { version } = require("../package.json");
 
 yargs(hideBin(process.argv))
   .version(version)
+  .scriptName("ecs-deploy-cli")
   .command(buildCommand)
   .command(deployCommand)
   .command(watchCommand)

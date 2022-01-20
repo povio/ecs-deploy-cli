@@ -14,8 +14,8 @@ import {
   ecsRegisterTaskDefinition,
   ecsUpdateService,
   ecsWatch,
-  RegisterTaskDefinitionRequest,
 } from "./aws.helper";
+import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
 class EcsDeployOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -81,7 +81,8 @@ export const command: yargs.CommandModule = {
       .options(getYargsOptions(EcsDeployOptions))
       .middleware(async (_argv) => {
         const argv = new EcsDeployOptions(await _argv, true);
-        argv.release = argv.release || await getRelease(argv.pwd, argv.releaseStrategy);
+        argv.release =
+          argv.release || (await getRelease(argv.pwd, argv.releaseStrategy));
         return argv;
       }, true);
   },
@@ -189,7 +190,7 @@ export const command: yargs.CommandModule = {
       secretsDict[k.replace(/__FROM$/, "")] = v;
     }
 
-    const taskDefinitionRequest: RegisterTaskDefinitionRequest = {
+    const taskDefinitionRequest: RegisterTaskDefinitionCommandInput = {
       containerDefinitions: [
         {
           ...previousContainerDefinition,

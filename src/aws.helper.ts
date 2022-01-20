@@ -1,23 +1,23 @@
-import { SharedIniFileCredentials, Credentials, ECR, ECS } from "aws-sdk";
+
+import {
+  ECSClient,
+  DescribeTaskDefinitionCommand,
+  RegisterTaskDefinitionCommand,
+  RegisterTaskDefinitionCommandInput,
+  UpdateServiceCommand,
+  DescribeServicesCommand,
+  Service, Deployment
+} from "@aws-sdk/client-ecs";
+import {
+  ECRClient,
+  DescribeImagesCommand,
+  GetAuthorizationTokenCommand,
+} from "@aws-sdk/client-ecr";
+
 import cli from "./cli.helper";
 
-function getCredentials() {
-  if (!!process.env.AWS_PROFILE) {
-    return new SharedIniFileCredentials({
-      profile: process.env.AWS_PROFILE,
-    });
-  } else {
-    return new Credentials({
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      sessionToken: process.env.AWS_SESSION_TOKEN || undefined,
-    });
-  }
-}
-
 function getEcrInstance(options: { region: string }) {
-  return new ECR({
-    credentials: getCredentials(),
+  return new ECRClient({
     region: options.region,
   });
 }
@@ -25,16 +25,17 @@ function getEcrInstance(options: { region: string }) {
 export async function ecrImageExists(options: {
   region: string;
   repositoryName: string;
-  imageIds: ECR.ImageIdentifierList;
+  imageIds;
 }) {
   const ecr = getEcrInstance({ region: options.region });
   try {
-    const images = await ecr
-      .describeImages({
+    const images = await ecr.send(
+      new DescribeImagesCommand({
         repositoryName: options.repositoryName,
         imageIds: options.imageIds,
       })
-      .promise();
+    );
+
     if (process.env.VERBOSE) {
       cli.verbose(JSON.stringify(images.imageDetails));
     }
@@ -49,11 +50,13 @@ export async function ecrImageExists(options: {
 
 export async function ecrGetDockerCredentials(options: { region: string }) {
   const ecr = getEcrInstance({ region: options.region });
-  const auth = (await ecr.getAuthorizationToken().promise())
-    .authorizationData[0];
+  const auth = await ecr.send(new GetAuthorizationTokenCommand({}));
   let password;
   try {
-    password = Buffer.from(auth.authorizationToken, "base64")
+    password = Buffer.from(
+      auth.authorizationData[0].authorizationToken,
+      "base64"
+    )
       .toString("ascii")
       .split(":")[1];
   } catch (e) {
@@ -62,13 +65,12 @@ export async function ecrGetDockerCredentials(options: { region: string }) {
   return {
     password,
     username: "AWS",
-    endpoint: auth.proxyEndpoint,
+    endpoint: auth.authorizationData[0].proxyEndpoint,
   };
 }
 
 function getECSInstance(options: { region: string }) {
-  return new ECS({
-    credentials: getCredentials(),
+  return new ECSClient({
     region: options.region,
   });
 }
@@ -79,11 +81,11 @@ export async function ecsGetCurrentTaskDefinition(options: {
 }) {
   const ecs = getECSInstance({ region: options.region });
   const taskDefinition = (
-    await ecs
-      .describeTaskDefinition({
+    await ecs.send(
+      new DescribeTaskDefinitionCommand({
         taskDefinition: options.taskDefinition,
       })
-      .promise()
+    )
   ).taskDefinition;
   if (process.env.VERBOSE) {
     cli.verbose(JSON.stringify(taskDefinition));
@@ -91,17 +93,15 @@ export async function ecsGetCurrentTaskDefinition(options: {
   return taskDefinition;
 }
 
-export type RegisterTaskDefinitionRequest =
-  ECS.Types.RegisterTaskDefinitionRequest;
-
 export async function ecsRegisterTaskDefinition(options: {
   region: string;
-  taskDefinitionRequest: RegisterTaskDefinitionRequest;
+  taskDefinitionRequest: RegisterTaskDefinitionCommandInput;
 }) {
   const ecs = getECSInstance({ region: options.region });
-
   const taskDefinition = (
-    await ecs.registerTaskDefinition(options.taskDefinitionRequest).promise()
+    await ecs.send(
+      new RegisterTaskDefinitionCommand(options.taskDefinitionRequest)
+    )
   ).taskDefinition;
   if (process.env.VERBOSE) {
     cli.verbose(JSON.stringify(taskDefinition));
@@ -117,13 +117,13 @@ export async function ecsUpdateService(options: {
 }) {
   const ecs = getECSInstance({ region: options.region });
   const service = (
-    await ecs
-      .updateService({
+    await ecs.send(
+      new UpdateServiceCommand({
         cluster: options.cluster,
         service: options.service,
         taskDefinition: options.taskDefinition,
       })
-      .promise()
+    )
   ).service;
   if (process.env.VERBOSE) {
     cli.verbose(JSON.stringify(service));
@@ -152,8 +152,8 @@ export function ecsWatch(
           message: string;
           createdAt: Date;
         }
-      | { type: "services"; services: ECS.Types.Services }
-      | { type: "deployment"; deployment: ECS.Types.Deployment }
+      | { type: "services"; services: Service[] }
+      | { type: "deployment"; deployment: Deployment }
   ) => void
 ): { stop: () => void; promise: Promise<void> } {
   const ecs = getECSInstance({ region: options.region });
@@ -165,12 +165,12 @@ export function ecsWatch(
   const getService = async () => {
     try {
       let passLastEventDate: Date;
-      const services = await ecs
-        .describeServices({
+      const services = await ecs.send(
+        new DescribeServicesCommand({
           services: [options.service],
           cluster: options.cluster,
         })
-        .promise();
+      );
 
       callback({ type: "services", services: services.services });
 

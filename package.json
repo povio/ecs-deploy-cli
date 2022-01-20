@@ -1,12 +1,12 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "0.9.8",
+  "version": "0.10.0",
   "packageManager": "yarn@3.1.1",
   "scripts": {
     "lint": "exlint --fix",
-    "test:ts-node": "ts-node ./src/index.ts",
+    "test:ts-node": "STAGE=test ts-node ./src/index.ts",
     "test": "STAGE=test ./bin/index.js",
-    "build": "yarn version patch && tsc -p . && chmod +x ./bin/index.js",
+    "build": "yarn version patch && yarn ncc build ./src/index.ts -m --no-source-map-register && chmod +x ./dist/index.js",
     "clean": "rm ./bin/*"
   },
   "keywords": [
@@ -26,10 +26,11 @@
   "contributors": [
     "Marko Zabreznik <marko.zabreznik@poviolabs.com>"
   ],
-  "bin": "./bin/index.js",
-  "dependencies": {
-    "@types/prompt-sync": "^4.1.1",
-    "aws-sdk": "^2.1048.0",
+  "bin": "./dist/index.js",
+  "devDependencies": {
+    "@aws-sdk/client-ecr": "^3.47.0",
+    "@aws-sdk/client-ecs": "^3.47.0",
+    "@aws-sdk/node-config-provider": "^3.47.0",
     "chalk": "^4.1.2",
     "diff": "^5.0.0",
     "docker-cli-js": "2.9.0",
@@ -38,19 +39,19 @@
     "reflect-metadata": "^0.1.13",
     "semver": "^7.3.5",
     "simple-git": "^2.48.0",
-    "yargs": "^17.3.1"
-  },
-  "devDependencies": {
+    "yargs": "^17.3.1",
     "@swc/core": "^1.2.123",
     "@types/diff": "^5.0.2",
     "@types/eslint": "^8.2.1",
     "@types/eslint-plugin-prettier": "^3.1.0",
     "@types/node": "^16.11.17",
     "@types/prettier": "^2.4.2",
+    "@types/prompt-sync": "^4.1.1",
     "@types/semver": "^7.3.9",
     "@types/yargs": "^17.0.8",
     "@typescript-eslint/eslint-plugin": "^5.8.1",
     "@typescript-eslint/parser": "^5.8.1",
+    "@vercel/ncc": "^0.33.1",
     "eslint": "^8.5.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-import-helpers": "^1.2.0",
