@@ -1,11 +1,11 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "packageManager": "yarn@3.1.1",
   "scripts": {
     "lint": "exlint --fix",
     "test:ts-node": "ts-node ./src/index.ts",
-    "test": "./bin/index.js",
+    "test": "STAGE=test ./bin/index.js",
     "build": "yarn version patch && tsc -p . && chmod +x ./bin/index.js",
     "clean": "rm ./bin/*"
   },

@@ -63,12 +63,7 @@ export const command: yargs.CommandModule = {
       .options(getYargsOptions(EcsBuildOptions))
       .middleware(async (_argv) => {
         const argv = new EcsBuildOptions(await _argv, true);
-        if (!argv.release) {
-          argv.release =
-            argv.releaseStrategy === "gitsha-stage"
-              ? `${await getRelease(argv.pwd)}-${argv.stage}`
-              : await getRelease(argv.pwd);
-        }
+        argv.release = argv.release || await getRelease(argv.pwd, argv.releaseStrategy);
         return argv;
       }, true);
   },

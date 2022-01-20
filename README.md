@@ -5,6 +5,7 @@
 - [x] happy path build for ECR
 - [ ] build/deploy for next.js
 - [ ] mac m1 support for docker build
+- [ ] CI/CD Examples 
 - [x] merge build and deploy into single bin
 - [x] `STAGE=app-dev yarn ecs:build`
 - [x] `STAGE=app-dev yarn ecs:deploy`
@@ -27,8 +28,11 @@ yarn add ecs-deploy-cli@poviolabs/ecs-deploy-cli
 .env.${STAGE}
 ```dotenv
 AWS_ACCOUNT_ID=
-AWS_REGION=
-AWS_REPO_NAME=
+AWS_REGION=eu-central-1
+AWS_REPO_NAME=my-app
+ECS_TASK_FAMILY=my-app-backend
+ECS_CLUSTER_NAME=my-app
+ECS_SERVICE_NAME=my-app-backend
 ```
 
 .env.${STAGE}.secrets
@@ -37,11 +41,23 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 ```
 
+## Usage
 
-## Running
+```bash
+yarn ecs-deploy-cli --help
+
+yarn ecs-deploy-cli build --stage my-stage
+yarn ecs-deploy-cli deploy --stage my-stage
+```
+
+## Development
 
 ```
-yarn ecs-build --stage my-stage
-yarn ecs-deploy --stage my-stage
-yarn ecs-watch --stage my-stage
+# test tools with test env
+yarn test build
+yarn test deploy
+yarn test watch
+
+# build new version
+yarn build
 ```

@@ -19,10 +19,18 @@ export async function getGitChanges(pwd: string): Promise<string> {
   }
 }
 
-export async function getRelease(pwd: string): Promise<string> {
+export async function getRelease(
+  pwd: string,
+  strategy: "gitsha" | "gitsha-stage" = "gitsha",
+  addon?: string
+): Promise<string> {
   try {
     const git = simpleGit(pwd);
-    return await git.revparse("HEAD");
+    const gitSha = await git.revparse("HEAD");
+    if (strategy === "gitsha-stage" && addon) {
+      return `${gitSha}-${addon}`
+    }
+    return gitSha
   } catch (e) {
     console.log(e);
     return undefined;
