@@ -5,7 +5,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/sdks
-!.yarn/versions
+.yarn/versions
 !.pnp.cjs
 
 node_modules

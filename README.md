@@ -21,7 +21,11 @@ Use this tool to deploy a Docker image to ECR and ECS with CI or manually.
 
 ```
 yarn add ecs-deploy-cli@poviolabs/ecs-deploy-cli
+
+# upgrade
+yarn up ecs-deploy-cli@poviolabs/ecs-deploy-cli
 ```
+
 
 ## Configure
 

@@ -1,6 +1,6 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "packageManager": "yarn@3.1.1",
   "scripts": {
     "lint": "exlint --fix",
@@ -31,15 +31,6 @@
     "@aws-sdk/client-ecr": "^3.47.0",
     "@aws-sdk/client-ecs": "^3.47.0",
     "@aws-sdk/node-config-provider": "^3.47.0",
-    "chalk": "^4.1.2",
-    "diff": "^5.0.0",
-    "docker-cli-js": "2.9.0",
-    "dotenv": "^10.0.0",
-    "prompt-sync": "^4.2.0",
-    "reflect-metadata": "^0.1.13",
-    "semver": "^7.3.5",
-    "simple-git": "^2.48.0",
-    "yargs": "^17.3.1",
     "@swc/core": "^1.2.123",
     "@types/diff": "^5.0.2",
     "@types/eslint": "^8.2.1",
@@ -52,12 +43,21 @@
     "@typescript-eslint/eslint-plugin": "^5.8.1",
     "@typescript-eslint/parser": "^5.8.1",
     "@vercel/ncc": "^0.33.1",
+    "chalk": "^4.1.2",
+    "diff": "^5.0.0",
+    "docker-cli-js": "2.9.0",
+    "dotenv": "^10.0.0",
     "eslint": "^8.5.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-import-helpers": "^1.2.0",
     "eslint-plugin-prettier": "^4.0.0",
     "prettier": "^2.5.1",
+    "prompt-sync": "^4.2.0",
+    "reflect-metadata": "^0.1.13",
+    "semver": "^7.3.5",
+    "simple-git": "^2.48.0",
     "ts-node": "^10.4.0",
-    "typescript": "4.5.4"
+    "typescript": "4.5.4",
+    "yargs": "^17.3.1"
   }
 }
