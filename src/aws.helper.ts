@@ -58,6 +58,31 @@ export async function ecrImageExists(options: {
   return true;
 }
 
+export async function ecrGetLatestImageTag(options: {
+  region: string;
+  repositoryName: string;
+}) {
+  const ecr = getEcrInstance({ region: options.region });
+  try {
+    const images = (
+      await ecr.send(
+        new DescribeImagesCommand({
+          repositoryName: options.repositoryName,
+        })
+      )
+    ).imageDetails;
+    images.sort((a, b) => {
+      return b.imagePushedAt > a.imagePushedAt ? -1 : 1;
+    });
+    return images[0].imageTags[0];
+  } catch (e) {
+    if (e.name === "ImageNotFoundException") {
+      return false;
+    }
+    throw e;
+  }
+}
+
 export async function ecrGetDockerCredentials(options: { region: string }) {
   const ecr = getEcrInstance({ region: options.region });
   const auth = await ecr.send(new GetAuthorizationTokenCommand({}));

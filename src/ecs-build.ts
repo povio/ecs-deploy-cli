@@ -4,12 +4,17 @@
  */
 
 import yargs from "yargs";
-import cli, { variable } from "./cli.helper";
+import cli, { variable, chk } from "./cli.helper";
 
 import { getGitChanges, getRelease } from "./git.helper";
 import { version as dockerVersion } from "./docker.helper";
 import { Options, Option, getYargsOptions } from "./yargs.helper";
-import { ecrGetDockerCredentials, ecrImageExists } from "./aws.helper";
+import {
+  ecrGetDockerCredentials,
+  ecrGetLatestImageTag,
+  ecrImageExists,
+  ecsGetCurrentTaskDefinition,
+} from "./aws.helper";
 import docker from "./docker.helper";
 
 class EcsBuildOptions extends Options {
@@ -63,7 +68,8 @@ export const command: yargs.CommandModule = {
       .options(getYargsOptions(EcsBuildOptions))
       .middleware(async (_argv) => {
         const argv = new EcsBuildOptions(await _argv, true);
-        argv.release = argv.release || await getRelease(argv.pwd, argv.releaseStrategy);
+        argv.release =
+          argv.release || (await getRelease(argv.pwd, argv.releaseStrategy));
         return argv;
       }, true);
   },
@@ -98,6 +104,24 @@ export const command: yargs.CommandModule = {
 
     cli.info(`Image name: ${imageName}`);
 
+    let ecrCredentials;
+
+    const dockerLogin = async () => {
+      if (ecrCredentials) return;
+
+      cli.info("Setting up AWS Docker Auth...");
+      ecrCredentials = await ecrGetDockerCredentials({
+        region: argv.awsRegion,
+      });
+      await docker.login(
+        ecrCredentials.endpoint,
+        "AWS",
+        ecrCredentials.password
+      );
+      cli.info("AWS ECR Docker Login succeeded");
+    };
+
+    let previousImageName;
     if (!argv.skipEcrExistsCheck) {
       if (
         await ecrImageExists({
@@ -109,6 +133,15 @@ export const command: yargs.CommandModule = {
         cli.info("Image already exists");
         return;
       }
+
+      // use the previous image for cache
+      await dockerLogin();
+
+      const previousImageTag = await ecrGetLatestImageTag({
+        region: argv.awsRegion,
+        repositoryName: argv.ecrRepoName
+      });
+      previousImageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${previousImageTag}`;
     }
 
     cli.banner("Build Step");
@@ -127,18 +160,9 @@ export const command: yargs.CommandModule = {
     }
 
     cli.banner("Push step");
-    cli.info("Setting up AWS Docker Auth...");
-    const ecrCredentials = await ecrGetDockerCredentials({
-      region: argv.awsRegion,
-    });
 
     try {
-      await docker.login(
-        ecrCredentials.endpoint,
-        "AWS",
-        ecrCredentials.password
-      );
-      cli.info("AWS ECR Docker Login succeeded");
+      await dockerLogin();
 
       if (!argv.ci) {
         if (!(await cli.confirm("Press enter to upload image to ECR..."))) {
@@ -150,12 +174,16 @@ export const command: yargs.CommandModule = {
       await docker.imagePush(imageName);
 
       cli.info(
-        `Done! Deploy the service with yarn ecs-deploy-cli --stage ${argv.stage}`
+        `Done! Deploy the service with yarn ${chk.magenta(
+          `ecs-deploy-cli deploy --stage ${argv.stage}`
+        )}`
       );
     } catch (e) {
       throw e;
     } finally {
-      await docker.logout(ecrCredentials.endpoint);
+      if (ecrCredentials) {
+        await docker.logout(ecrCredentials.endpoint);
+      }
     }
   },
 };

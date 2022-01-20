@@ -3,6 +3,13 @@ import cli from "./cli.helper";
 
 const options = {
   echo: false,
+  // pass DOCKER_ env into the command to set remote docker machines
+  env: Object.entries(process.env)
+    .filter((x) => x[0].startsWith("DOCKER_"))
+    .reduce((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>),
 };
 
 export async function version() {
@@ -29,10 +36,11 @@ export async function imageExists(imageName: string): Promise<boolean> {
 export async function imageBuild(
   imageName: string,
   release: string,
-  dockerFile: string
+  dockerFile: string,
+  previousImageName?: string
 ) {
   await dockerCommand(
-    `build --progress plain -t "${imageName}" -f "${dockerFile}" . --build-arg RELEASE="${release}"`,
+    `build --progress plain -t "${imageName}" -f "${dockerFile}" ${previousImageName?`--cache-from ${previousImageName}`:""} . --build-arg RELEASE="${release}"`,
     { echo: true }
   );
 }
