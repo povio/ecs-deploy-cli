@@ -21,7 +21,13 @@ yargs(hideBin(process.argv))
   .showHelpOnFail(true)
   .fail((msg, err, yargs) => {
     if (msg) cli.error(msg);
-    if (err) throw err;
+    if (err) {
+        if (!!process.env.VERBOSE) {
+            console.error(err);
+        } else {
+            cli.error(err.message);
+        }
+    }
     cli.info("Use '--help' for more info");
     process.exit(1);
   })

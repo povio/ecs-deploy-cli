@@ -1,4 +1,3 @@
-
 import {
   ECSClient,
   DescribeTaskDefinitionCommand,
@@ -6,18 +5,25 @@ import {
   RegisterTaskDefinitionCommandInput,
   UpdateServiceCommand,
   DescribeServicesCommand,
-  Service, Deployment
+  Service,
+  Deployment,
 } from "@aws-sdk/client-ecs";
 import {
   ECRClient,
   DescribeImagesCommand,
   GetAuthorizationTokenCommand,
 } from "@aws-sdk/client-ecr";
+import { defaultProvider }  from "@aws-sdk/credential-provider-node";
 
 import cli from "./cli.helper";
 
+function getCredentials() {
+  return defaultProvider();
+}
+
 function getEcrInstance(options: { region: string }) {
   return new ECRClient({
+    credentials: getCredentials(),
     region: options.region,
   });
 }
@@ -71,6 +77,7 @@ export async function ecrGetDockerCredentials(options: { region: string }) {
 
 function getECSInstance(options: { region: string }) {
   return new ECSClient({
+    credentials: getCredentials(),
     region: options.region,
   });
 }
