@@ -142,6 +142,7 @@ export const command: yargs.CommandModule = {
         repositoryName: argv.ecrRepoName
       });
       previousImageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${previousImageTag}`;
+      cli.info(`Try to build on image: ${previousImageName}`);
     }
 
     cli.banner("Build Step");
