@@ -13,12 +13,16 @@ import {
   DescribeImagesCommand,
   GetAuthorizationTokenCommand,
 } from "@aws-sdk/client-ecr";
-import { defaultProvider }  from "@aws-sdk/credential-provider-node";
+import { fromIni } from "@aws-sdk/credential-provider-ini";
+import { fromEnv } from "@aws-sdk/credential-provider-env";
 
 import cli from "./cli.helper";
 
 function getCredentials() {
-  return defaultProvider();
+  if (process.env.AWS_PROFILE) {
+    return fromIni();
+  }
+  return fromEnv();
 }
 
 function getEcrInstance(options: { region: string }) {

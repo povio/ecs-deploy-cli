@@ -1,6 +1,6 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "0.10.2",
+  "version": "0.10.4",
   "packageManager": "yarn@3.1.1",
   "scripts": {
     "lint": "exlint --fix",
@@ -61,7 +61,7 @@
     "yargs": "^17.3.1"
   },
   "dependencies": {
-    "@aws-sdk/credential-provider-ini": "^3.47.0",
-    "@aws-sdk/credential-provider-node": "^3.47.0"
+    "@aws-sdk/credential-provider-env": "^3.47.0",
+    "@aws-sdk/credential-provider-ini": "^3.47.0"
   }
 }
