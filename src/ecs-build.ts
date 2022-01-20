@@ -38,6 +38,9 @@ class EcsBuildOptions extends Options {
   @Option({ envAlias: "AWS_REPO_NAME", demandOption: true })
   ecrRepoName: string;
 
+  @Option({ describe: "Pull image from ECR to use as a base" })
+  ecrCache: boolean;
+
   @Option({ envAlias: "AWS_REGION", demandOption: true })
   awsRegion: string;
 
@@ -121,19 +124,22 @@ export const command: yargs.CommandModule = {
       cli.info("AWS ECR Docker Login succeeded");
     };
 
-    let previousImageName;
+
     if (!argv.skipEcrExistsCheck) {
       if (
-        await ecrImageExists({
-          region: argv.awsRegion,
-          repositoryName: argv.ecrRepoName,
-          imageIds: [{ imageTag: argv.release }],
-        })
+          await ecrImageExists({
+            region: argv.awsRegion,
+            repositoryName: argv.ecrRepoName,
+            imageIds: [{imageTag: argv.release}],
+          })
       ) {
         cli.info("Image already exists");
         return;
       }
+    }
 
+    let previousImageName;
+    if (argv.ecrCache) {
       // use the previous image for cache
       await dockerLogin();
 
@@ -142,7 +148,8 @@ export const command: yargs.CommandModule = {
         repositoryName: argv.ecrRepoName
       });
       previousImageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${previousImageTag}`;
-      cli.info(`Try to build on image: ${previousImageName}`);
+      cli.info(`Using cache image: ${previousImageName}`);
+      await docker.imagePull(imageName);
     }
 
     cli.banner("Build Step");

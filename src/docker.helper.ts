@@ -49,6 +49,10 @@ export async function imagePush(imageName: string) {
   await dockerCommand(`push ${imageName}`, { echo: true });
 }
 
+export async function imagePull(imageName: string) {
+  await dockerCommand(`pull ${imageName}`, { echo: true });
+}
+
 export async function login(
   server: string,
   username: string,
@@ -75,4 +79,5 @@ export default {
   imageBuild,
   imageExists,
   imagePush,
+  imagePull,
 };
