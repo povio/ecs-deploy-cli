@@ -1,0 +1,28 @@
+# build and resource
+node_modules
+.git
+/coverage
+/dist
+
+# env
+# files like .env.production are not ignored
+.env
+.env.local
+.env.*.secrets
+.env.*.local
+
+# editos
+.vscode
+.idea
+
+# yarn
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# others
+.DS_Store
