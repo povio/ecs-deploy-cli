@@ -66,11 +66,10 @@ class EcsDeployOptions extends Options {
   ecsVersion: string;
 
   @Option({
-    envAlias: "PREVIOUS_VERSION",
     type: "string",
     describe: "The version to base the next revision on",
   })
-  ecsPreviousVersion: string;
+  ecsBaseTaskVersion: string;
 }
 
 export const command: yargs.CommandModule = {
@@ -117,16 +116,16 @@ export const command: yargs.CommandModule = {
 
     cli.info("Getting latest task definition..");
 
-    if (argv.ecsPreviousVersion) {
+    if (argv.ecsBaseTaskVersion) {
       cli.notice(
-        `Basing next version on version ${argv.ecsTaskFamily}:${argv.ecsPreviousVersion}`
+        `Basing next version on version ${argv.ecsTaskFamily}:${argv.ecsBaseTaskVersion}`
       );
     }
 
     const previousTaskDefinition = await ecsGetCurrentTaskDefinition({
       region: argv.awsRegion,
-      taskDefinition: argv.ecsPreviousVersion
-        ? `${argv.ecsTaskFamily}:${argv.ecsPreviousVersion}`
+      taskDefinition: argv.ecsBaseTaskVersion
+        ? `${argv.ecsTaskFamily}:${argv.ecsBaseTaskVersion}`
         : argv.ecsTaskFamily,
     });
 

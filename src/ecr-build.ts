@@ -15,7 +15,7 @@ import {
 } from "./aws.helper";
 import docker from "./docker.helper";
 
-class EcsBuildOptions extends Options {
+class EcrBuildOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })
   pwd: string;
 
@@ -66,16 +66,16 @@ export const command: yargs.CommandModule = {
   describe: "Build and Push the ECR Image",
   builder: async (y) => {
     return y
-      .options(getYargsOptions(EcsBuildOptions))
+      .options(getYargsOptions(EcrBuildOptions))
       .middleware(async (_argv) => {
-        const argv = new EcsBuildOptions(await _argv, true);
+        const argv = new EcrBuildOptions(await _argv, true);
         argv.release =
           argv.release || (await getRelease(argv.pwd, argv.releaseStrategy));
         return argv;
       }, true);
   },
   handler: async (_argv) => {
-    const argv = (await _argv) as unknown as EcsBuildOptions;
+    const argv = (await _argv) as unknown as EcrBuildOptions;
 
     await cli.printEnvironment(argv);
 

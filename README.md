@@ -82,9 +82,9 @@ Use this flag while debugging the build. This might have unintended consequences
 
 Speed up builds if you know the ECR image does not exist. (build only)
 
-#### --ecsPreviousVersion
+#### --ecsBaseTaskVersion
 
-If the ECS task got corrupted, you can use this flag to deploy a new one based on a sane version. (deploy only)
+If the ECS task got corrupted, you can use this flag to deploy a new one based on a sane version. Defaults to the latest one. (deploy only)
 
 ## Development
 

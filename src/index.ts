@@ -2,7 +2,7 @@
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { command as buildCommand } from "./ecs-build";
+import { command as buildCommand } from "./ecr-build";
 import { command as deployCommand } from "./ecs-deploy";
 import { command as watchCommand } from "./ecs-watch";
 import * as cli from "./cli.helper";
