@@ -1,6 +1,7 @@
+import { config } from "dotenv";
 import "reflect-metadata";
-import { getEnv } from "./env.helper";
 import { Options as YargsOptions } from "yargs";
+import { getConfigForECS, loadConfig } from "./config";
 
 interface IOptionProperties extends YargsOptions {
   envAlias?: string;
@@ -56,25 +57,33 @@ export function getYargsOptions<T>(target: any): Record<keyof T, YargsOptions> {
 export class Options {
   stage: string;
   pwd: string;
-
+  config: Record<string, string>;
   constructor(values: any, overrideEnv: boolean) {
     this.stage = values.stage || process.env.STAGE;
     this.pwd = values.pwd || process.cwd();
-
-    const environment = getEnv(this.pwd, this.stage, overrideEnv);
-
-    // override from ENV
+    this.config = getConfigForECS("config.yaml", this.stage, this.pwd);
+    // override from ENV REWRITE
     for (const [name, o] of Object.entries(getOptions(this.constructor))) {
-      if (["pwd", "stage"].includes(name)) {
+      if (["pwd", "stage", "config"].includes(name)) {
         continue;
       }
-      this[name] = values[name];
+
+      let valueFromConfig =
+        values[name] ||
+        this.config["ecs_deploy__" + name] ||
+        this.config["ecs_deploy__" + o.envAlias] ||
+        this.config[o.envAlias];
+      this[name] = valueFromConfig;
+
       // fallback to env
-      if (o.envAlias) {
+      /*if (o.envAlias) {
         if (this[name] === undefined) {
           // get option from ENV
-          if (environment[o.envAlias] !== undefined) {
-            this[name] = environment[o.envAlias];
+          let variableFromConfig =
+            this.config["ecs_deploy__" + name] ||
+            this.config["ecs_deploy__" + o.envAlias];
+          if (variableFromConfig !== undefined) {
+            this[name] = variableFromConfig;
           }
         } else {
           // write option from yargs back into ENV
@@ -82,7 +91,7 @@ export class Options {
             process.env[o.envAlias] = this[name];
           }
         }
-      }
+      }*/
       // fallback to default
       if (this[name] === undefined && o.default) {
         // use default from yargs

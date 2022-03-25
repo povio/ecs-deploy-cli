@@ -16,6 +16,7 @@ import {
   ecsWatch,
 } from "./aws.helper";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
+import { getSecretsForECS } from "./config";
 
 class EcsDeployOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -174,21 +175,27 @@ export const command: yargs.CommandModule = {
     }
 
     // Get previous secret pointers
-    const secretsDict = previousContainerDefinition.secrets.reduce(
-      (acc, cur) => {
-        acc[cur.name] = cur.valueFrom;
-        return acc;
-      },
-      {} as Record<string, string>
+    const previousContainerSecrets: Record<string, string> = Object.assign(
+      {},
+      ...previousContainerDefinition.secrets.map((kv) => {
+        return { [kv.name]: kv.valueFrom };
+      })
     );
 
+    // Get secret pointers from config
+    const newContainerSecrets: Record<string, string> = Object.assign(
+      {},
+      ...getSecretsForECS(argv.config).map((kv) => {
+        return { [kv.name]: kv.valueFrom };
+      })
+    );
+    const secrets = { ...previousContainerSecrets, ...newContainerSecrets };
     // inject secret SSM/SM from ENV
-    for (const [k, v] of Object.entries(process.env).filter(([k, v]) => {
-      return k.endsWith("__FROM");
+    /*for (const [k, v] of Object.entries(process.env).filter(([k, v]) => {
+      return k.match(/__FROM$/i);
     })) {
-      secretsDict[k.replace(/__FROM$/, "")] = v;
-    }
-
+      secretsDict[k.replace(/__FROM$/i, "")] = v;
+    }*/
     const taskDefinitionRequest: RegisterTaskDefinitionCommandInput = {
       containerDefinitions: [
         {
@@ -198,7 +205,7 @@ export const command: yargs.CommandModule = {
             name: k,
             value: v,
           })),
-          secrets: Object.entries(secretsDict).map(([k, v]) => ({
+          secrets: Object.entries(secrets).map(([k, v]) => ({
             name: k,
             valueFrom: v,
           })),
