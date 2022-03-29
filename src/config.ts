@@ -7,27 +7,37 @@ export function loadConfig(name: string, stage: string, root: string) {
   let config: Record<string, any> = {};
   let env: Record<string, string> = {};
 
-  //Load config.yaml
+  //Get config tree from config.yaml
   config = loadYaml(root, name).stages[stage];
-  //Load ENV KV pairs from config.yaml
+  //Get environment from config
   if (config.environment) {
-    mergeDeep(env, config.environment);
+    Object.assign(env, config.environment);
+    delete config.environment;
   }
-  //Load ENV files from config.yaml
+  //Load environment from env files defined in config
   if (config.env_files) {
     config.env_files.forEach((env_file: string) => {
       let envConfig = loadEnv(root, env_file);
-      mergeDeep(env, envConfig);
+      Object.assign(env, envConfig);
     });
+    delete config.env_files;
   }
-  //Add process.env to generated ENV
-  mergeDeep(env, process.env);
-  //Add our env to process.env
+  //Add process.env to generated env
+  Object.assign(env, process.env);
+  //Add generated env back to process.env
   pushToProcessEnv(env);
-  //Add env to config
-  mergeDeep(config, env2obj(env));
-  console.log(config);
+  //Merge env with config
 
+  mergeDeep(
+    config,
+    env2obj(
+      Object.fromEntries(
+        Object.entries(env).filter(
+          ([key]) => key.includes("__") && !key.startsWith("__")
+        )
+      )
+    )
+  );
   return config;
 }
 
@@ -38,12 +48,12 @@ export function getConfigForECS(name: string, stage: string, root: string) {
 export function getSecretsForECS(configFile: Record<string, any>) {
   let configtoenv = obj2env(configFile);
   let secrets = configtoenv
-    .filter((entry) => entry.split("=")[0].match(/__FROM$/gi))
+    .filter((entry) => entry.split("=")[0].match(/__FROM$/i))
     .map((entry) => {
-      let split = entry.split("=");
+      let [name, value] = entry.split("=");
       return {
-        name: split[0].replace(/__FROM$/i, ""),
-        valueFrom: split[1],
+        name: name.replace(/__FROM$/i, ""),
+        valueFrom: value,
       };
     });
   return secrets;
@@ -82,23 +92,19 @@ function delimitedStringToObject(str: string, val = {}, delimiter = "__") {
   }, val);
 }
 
-function obj2env(obj: Record<string, any>) {
+function obj2env(obj: Record<string, any>, delimiter = "__") {
   var keys: string[] = [];
   for (var key in obj) {
-    if (typeof obj[key] === "object") {
+    if (isObject(obj[key])) {
       var subkeys = obj2env(obj[key]);
       keys = keys.concat(
-        subkeys.map(function (subkey) {
-          let prevVal = key + "__" + subkey;
-          if (prevVal.includes("=")) {
-            return prevVal;
-          } else {
-            return prevVal + "=" + deepValue(obj, key + "." + subkey);
-          }
+        subkeys.map((subkey) => {
+          let prevVal = key + delimiter + subkey;
+          return prevVal;
         })
       );
     } else {
-      keys.push(key + "=" + deepValue(obj, key));
+      keys.push(key + "=" + deepValue(obj, key, delimiter));
     }
   }
   return keys;
@@ -124,23 +130,23 @@ function pushToProcessEnv(obj: Record<string, any>) {
 }
 
 function env2obj(env: Record<string, string> | NodeJS.ProcessEnv) {
-  let configFromENV: any = {};
-  Object.keys(env).forEach((envKey: string) => {
-    let objectFromKey = delimitedStringToObject(envKey, env[envKey]);
-    configFromENV = mergeDeep(configFromENV, objectFromKey);
-  });
-  return configFromENV;
+  return Object.keys(env)
+    .map((envKey) => delimitedStringToObject(envKey, env[envKey]))
+    .reduce((prev, current) => {
+      mergeDeep(prev, current);
+      return prev;
+    }, {});
 }
 
+function isObject(item: any) {
+  return item && typeof item === "object" && !Array.isArray(item);
+}
 /**
  * Deep merge two objects.
  * @param target
  * @param ...sources
  */
 function mergeDeep(target: any, ...sources: any[]): object {
-  function isObject(item: any) {
-    return item && typeof item === "object" && !Array.isArray(item);
-  }
   if (!sources.length) return target;
   const source = sources.shift();
 
@@ -158,9 +164,9 @@ function mergeDeep(target: any, ...sources: any[]): object {
   return mergeDeep(target, ...sources);
 }
 
-function deepValue(obj: Record<string, any>, path: any) {
-  for (var i = 0, path = path.split("."), len = path.length; i < len; i++) {
-    obj = obj[path[i]];
+function deepValue(obj: Record<string, any>, path: any, delimiter = "__") {
+  for (let pathEntry of path.split(delimiter)) {
+    obj = obj[pathEntry];
   }
   return obj;
 }
