@@ -1,11 +1,20 @@
 import dotenv from "dotenv";
+import fs from "fs";
 import path from "path";
 import YAML from "yaml";
-import fs from "fs";
 
-export function loadConfig(name: string, stage: string, root: string) {
+interface ECSSecret {
+  name: string;
+  valueFrom: string;
+}
+
+export function loadConfig(
+  name: string,
+  stage: string,
+  root: string
+): Record<string, any> {
   let config: Record<string, any> = {};
-  let env: Record<string, string> = {};
+  const env: Record<string, string> = {};
 
   //Get config tree from config.yaml
   config = loadYaml(root, name).stages[stage];
@@ -17,7 +26,7 @@ export function loadConfig(name: string, stage: string, root: string) {
   //Load environment from env files defined in config
   if (config.env_files) {
     config.env_files.forEach((env_file: string) => {
-      let envConfig = loadEnv(root, env_file);
+      const envConfig = loadEnv(root, env_file);
       Object.assign(env, envConfig);
     });
     delete config.env_files;
@@ -41,16 +50,20 @@ export function loadConfig(name: string, stage: string, root: string) {
   return config;
 }
 
-export function getConfigForECS(name: string, stage: string, root: string) {
+export function getConfigForECS(
+  name: string,
+  stage: string,
+  root: string
+): Record<string, any> {
   return env2record(obj2env(loadConfig(name, stage, root)));
 }
 
-export function getSecretsForECS(configFile: Record<string, any>) {
-  let configtoenv = obj2env(configFile);
-  let secrets = configtoenv
+export function getSecretsForECS(configFile: Record<string, any>): ECSSecret[] {
+  const configtoenv = obj2env(configFile);
+  const secrets = configtoenv
     .filter((entry) => entry.split("=")[0].match(/__FROM$/i))
     .map((entry) => {
-      let [name, value] = entry.split("=");
+      const [name, value] = entry.split("=");
       return {
         name: name.replace(/__FROM$/i, ""),
         valueFrom: value,
@@ -62,7 +75,7 @@ export function getSecretsForECS(configFile: Record<string, any>) {
 export function loadYaml(root: string, name: string): Record<string, any> {
   const configPath = findFile(root, name);
   if (configPath) {
-    let yamlConfigObject = YAML.parse(fs.readFileSync(configPath, "utf8"), {
+    const yamlConfigObject = YAML.parse(fs.readFileSync(configPath, "utf8"), {
       version: "1.1", //Supports merge keys
     });
     return yamlConfigObject;
@@ -78,12 +91,12 @@ export function loadEnv(root: string, name: string): Record<string, any> {
   return {};
 }
 
-export function findFile(root: string, name: string): string | undefined {
-  let configPath = path.join(root, name);
-  if (fs.existsSync(configPath)) {
-    return configPath;
+export function findFile(root: string, name: string): string {
+  const configPath = path.join(root, name);
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Couldn't find configuration file "${name}"`);
   }
-  return undefined;
+  return configPath;
 }
 
 function delimitedStringToObject(str: string, val = {}, delimiter = "__") {
@@ -93,13 +106,13 @@ function delimitedStringToObject(str: string, val = {}, delimiter = "__") {
 }
 
 function obj2env(obj: Record<string, any>, delimiter = "__") {
-  var keys: string[] = [];
-  for (var key in obj) {
+  let keys: string[] = [];
+  for (const key in obj) {
     if (isObject(obj[key])) {
-      var subkeys = obj2env(obj[key]);
+      const subkeys = obj2env(obj[key]);
       keys = keys.concat(
         subkeys.map((subkey) => {
-          let prevVal = key + delimiter + subkey;
+          const prevVal = key + delimiter + subkey;
           return prevVal;
         })
       );
@@ -113,7 +126,7 @@ function obj2env(obj: Record<string, any>, delimiter = "__") {
 function env2record(obj: Record<string, any>) {
   return obj
     .map((entry: any) => {
-      let [key, value] = entry.split("=");
+      const [key, value] = entry.split("=");
       return { [key]: value };
     })
     .reduce(function (result: any, current: any) {
@@ -165,7 +178,7 @@ function mergeDeep(target: any, ...sources: any[]): object {
 }
 
 function deepValue(obj: Record<string, any>, path: any, delimiter = "__") {
-  for (let pathEntry of path.split(delimiter)) {
+  for (const pathEntry of path.split(delimiter)) {
     obj = obj[pathEntry];
   }
   return obj;
