@@ -1,6 +1,6 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "packageManager": "yarn@3.1.1",
   "scripts": {
     "lint": "exlint --fix",
@@ -11,11 +11,10 @@
   },
   "keywords": [
     "povio",
-    "spa",
+    "ecs",
+    "ecr",
     "deploy",
-    "aws",
-    "s3",
-    "cloudfront"
+    "aws"
   ],
   "homepage": "https://github.com/poviolabs/ecs-deploy-cli",
   "bugs": "https://github.com/poviolabs/ecs-deploy-cli/issues",
@@ -30,6 +29,8 @@
   "devDependencies": {
     "@aws-sdk/client-ecr": "^3.47.0",
     "@aws-sdk/client-ecs": "^3.47.0",
+    "@aws-sdk/credential-provider-env": "^3.47.0",
+    "@aws-sdk/credential-provider-ini": "^3.47.0",
     "@aws-sdk/node-config-provider": "^3.47.0",
     "@swc/core": "^1.2.123",
     "@types/diff": "^5.0.2",
@@ -61,8 +62,8 @@
     "yaml": "^1.10.2",
     "yargs": "^17.3.1"
   },
-  "dependencies": {
-    "@aws-sdk/credential-provider-env": "^3.47.0",
-    "@aws-sdk/credential-provider-ini": "^3.47.0"
+  "engines": {
+    "node": ">= 16.14.2",
+    "yarn": ">= 3.2"
   }
 }
