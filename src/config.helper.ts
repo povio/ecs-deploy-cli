@@ -29,7 +29,8 @@ export interface Config extends ConfigItem {
 export function loadConfig(
   root: string,
   stage: string,
-  fileName: string = process.env.CONFIG_FILE || "config.yaml"
+  fileName: string = process.env.CONFIG_FILE || "config.yaml",
+  globalPrefix = process.env.CONFIG_PREFIX || "app"
 ): Config {
   if (!root || !stage) {
     throw new Error("Stage not defined");
@@ -61,10 +62,7 @@ export function loadConfig(
         if (!localYamlConfig.stages[stage]) {
           throw new Error(`Stage "${stage}" not found in config.local.yaml`);
         }
-        console.log(config.yaml_local_override);
-        console.log(localYamlConfig.stages[stage].yaml_local_override);
         mergeDeep(config, localYamlConfig.stages[stage]);
-        console.log(config.yaml_local_override);
       }
     }
   }
@@ -89,9 +87,7 @@ export function loadConfig(
     }
   }
 
-  loadEnvironmentIntoConfig(config, environment);
-
-  console.log(config.yaml_local_override);
+  loadEnvironmentIntoConfig(config, environment, globalPrefix);
 
   return config;
 }
@@ -207,8 +203,6 @@ export function readEnv(root: string, name: string): Record<string, string> {
 
 /**
  * Deep merge two objects, mutating the target
- * @param target
- * @param ...sources
  */
 function mergeDeep(target: any, ...sources: any[]): object {
   if (!sources.length) return target;
