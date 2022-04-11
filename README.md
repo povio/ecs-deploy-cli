@@ -42,22 +42,23 @@ stages:
       ECS_SERVICE_NAME: myapp-dev-backend
       ECS_CLUSTER_NAME: myapp-dev
 
-      # relative to PWD
+      ## relative to PWD
       # DOCKER_PATH: ./Dockerfile
 
     ecs_env:
-      # variables can be injected directly into ECS
-      #  but one should stick with this file by default
-      #  to avoid the ECS task environment size limit
+      ## variables can be injected directly into ECS
+      ##  but one should stick with this file by default
+      ##  to avoid the ECS task environment size limit
       # TYPEORM_DATABASE: myapp
 
     ecs_secrets:
       TYPEORM_PASSWORD: 'arn:aws:secretsmanager:eu-central-1:000000000000:....'
       app__auth__secret: 'arn:aws:ssm:eu-central-1:000000000000:/myapp-dev/secret'
 
-    # optionally, have a dot-env locally
-    #  remember to gitignore!
-    env_files: [ '.env.myapp-dev.secrets' ]
+    ## optionally, have a dot-env locally
+    ##  remember to gitignore!
+    # env_files: [ '.env.myapp-dev.secrets' ]
+    ## or use config.local.yaml
 ```
 
 ## Run
