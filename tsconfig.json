@@ -9,6 +9,7 @@
     "module": "commonjs",
     "baseUrl": "src",
     "sourceRoot": "/",
+    "sourceMap": true,
     "resolveJsonModule": true,
     "paths": {
       "~*": [
