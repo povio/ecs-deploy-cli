@@ -4,6 +4,7 @@
  */
 
 import yargs from "yargs";
+import path from "path";
 import cli, { chk } from "./cli.helper";
 
 import { getGitChanges, getRelease } from "~git.helper";
@@ -12,6 +13,7 @@ import {
   getYargsOptions,
   loadYargsConfig,
   Config,
+  Options,
 } from "~yargs.helper";
 import {
   ecrGetDockerCredentials,
@@ -20,7 +22,7 @@ import {
 } from "~aws.helper";
 import docker from "./docker.helper";
 
-class EcrBuildOptions {
+class EcrBuildOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })
   pwd: string;
 
@@ -166,18 +168,18 @@ export const command: yargs.CommandModule = {
 
     cli.banner("Build Step");
 
-    if (argv.dockerPath !== "Dockerfile") {
-      cli.notice(`Dockerfile path: ${argv.dockerPath}`);
-    }
+    const dockerPath = path.join(argv.pwd, argv.dockerPath);
+    cli.notice(`Dockerfile path: ${dockerPath}`);
 
     if (await docker.imageExists(imageName)) {
       cli.info("Reusing docker image");
     } else {
       cli.info("Building docker image");
+
       await docker.imageBuild(
         imageName,
         argv.release,
-        argv.dockerPath,
+        dockerPath,
         previousImageName
       );
     }

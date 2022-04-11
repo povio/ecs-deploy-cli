@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Options as YargsOptions } from "yargs";
+import path from "path";
 
 import { loadConfig, Config } from "~config.helper";
 import cli from "~cli.helper";
@@ -69,7 +70,9 @@ export function loadYargsConfig<T extends Options>(
 ): T {
   const argv: T = new cls();
 
-  argv.pwd = (_argv.pwd as string) || process.env.PWD || process.cwd();
+  argv.pwd = path.resolve(
+    (_argv.pwd as string) || process.env.PWD || process.cwd()
+  );
   if (!argv.pwd) throw new Error("No PWD given");
   argv.stage = (_argv.stage as string) || process.env.STAGE;
   if (!argv.stage) throw new Error("No Stage defined");

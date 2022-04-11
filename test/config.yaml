@@ -2,7 +2,8 @@ stages:
   test:
     env_files: ['secrets.env']
     ecs_deploy:
-      DOCKER_PATH: ./test/Dockerfile
+      # relative to PWD
+      DOCKER_PATH: ./Dockerfile
 
     ecs_env:
 
