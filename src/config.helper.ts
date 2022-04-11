@@ -35,12 +35,39 @@ export function loadConfig(
     throw new Error("Stage not defined");
   }
 
-  const config: Config = {
-    environment: {},
-    env_files: [],
-    // read tree from .yaml stage
-    ...readYaml(root, fileName).stages[stage],
-  };
+  let config: Config;
+  {
+    const yamlPath = path.join(root, fileName);
+    if (!fs.existsSync(yamlPath)) {
+      // the config file is required
+      throw new Error(`Couldn't find configuration file "${yamlPath}"`);
+    }
+
+    const yamlConfig = readYaml(yamlPath);
+    if (!yamlConfig.stages[stage]) {
+      throw new Error(`Stage "${stage}" not found in ${fileName}`);
+    }
+
+    config = {
+      environment: {},
+      env_files: [],
+      // read tree from .yaml stage
+      ...yamlConfig.stages[stage],
+    };
+
+    if (fileName === "config.yaml") {
+      if (fs.existsSync(path.join(root, "config.local.yaml"))) {
+        const localYamlConfig = readYaml(path.join(root, "config.local.yaml"));
+        if (!localYamlConfig.stages[stage]) {
+          throw new Error(`Stage "${stage}" not found in config.local.yaml`);
+        }
+        console.log(config.yaml_local_override);
+        console.log(localYamlConfig.stages[stage].yaml_local_override);
+        mergeDeep(config, localYamlConfig.stages[stage]);
+        console.log(config.yaml_local_override);
+      }
+    }
+  }
 
   const environment: Record<string, string> = {
     // get environment from yaml
@@ -63,6 +90,8 @@ export function loadConfig(
   }
 
   loadEnvironmentIntoConfig(config, environment);
+
+  console.log(config.yaml_local_override);
 
   return config;
 }
@@ -153,19 +182,10 @@ export function loadEnvironmentIntoConfig(
 
 /**
  * Read YAML into json tree
- * @param root
- * @param name
+ * @param path
  */
-export function readYaml(
-  root: string,
-  name = "config.yaml"
-): Record<string, any> {
-  const yamlPath = path.join(root, name);
-  if (!fs.existsSync(yamlPath)) {
-    // the config file is required
-    throw new Error(`Couldn't find configuration file "${yamlPath}"`);
-  }
-  return YAML.parse(fs.readFileSync(yamlPath, "utf8"), {
+export function readYaml(path: string): Record<string, any> {
+  return YAML.parse(fs.readFileSync(path, "utf8"), {
     version: "1.1", //Supports merge keys
   });
 }
@@ -183,4 +203,31 @@ export function readEnv(root: string, name: string): Record<string, string> {
     console.log(`Notice: env file ${envPath} not found`);
   }
   return {};
+}
+
+/**
+ * Deep merge two objects, mutating the target
+ * @param target
+ * @param ...sources
+ */
+function mergeDeep(target: any, ...sources: any[]): object {
+  if (!sources.length) return target;
+  const source = sources.shift();
+
+  if (isObject(target) && isObject(source)) {
+    for (const key in source) {
+      if (isObject(source[key])) {
+        if (!target[key]) Object.assign(target, { [key]: {} });
+        mergeDeep(target[key], source[key]);
+      } else {
+        Object.assign(target, { [key]: source[key] });
+      }
+    }
+  }
+
+  mergeDeep(target, ...sources);
+}
+
+function isObject(item: any) {
+  return item && typeof item === "object" && !Array.isArray(item);
 }

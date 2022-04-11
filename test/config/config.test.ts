@@ -108,6 +108,7 @@ describe("config", () => {
         app__from_default_yaml_process_env_override: "wrong5",
       },
       env_files: ["config.env"],
+      yaml_local_override: "correct",
     });
   });
 });

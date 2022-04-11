@@ -13,6 +13,7 @@ stages:
     from_env: wrong
     from_default_yaml_override: correct
     from_default_yaml_process_env_override: wrong4
+    yaml_local_override: wrong1
     environment:
       app__yaml_override: correct
       app__from_env: wrong_again
