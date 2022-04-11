@@ -61,6 +61,7 @@ export class Options {
   constructor(values: any, overrideEnv: boolean) {
     this.stage = values.stage || process.env.STAGE;
     this.pwd = values.pwd || process.cwd();
+
     this.config = getConfigForECS("config.yaml", this.stage, this.pwd);
     // override from ENV REWRITE
     for (const [name, o] of Object.entries(getOptions(this.constructor))) {

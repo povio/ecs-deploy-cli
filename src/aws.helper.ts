@@ -17,6 +17,7 @@ import { fromIni } from "@aws-sdk/credential-provider-ini";
 import { fromEnv } from "@aws-sdk/credential-provider-env";
 
 import cli from "./cli.helper";
+import { loadConfig } from "./config";
 
 function getCredentials() {
   if (process.env.AWS_PROFILE) {
@@ -270,4 +271,31 @@ export function ecsWatch(
     stop,
     promise,
   };
+}
+
+interface ECSSecret {
+  name: string;
+  valueFrom: string;
+}
+
+export function getConfigForECS(
+  fileName: string,
+  stage: string,
+  root: string
+): Record<string, any> {
+  return env2record(obj2env(loadConfig(root, stage, fileName)));
+}
+
+export function getSecretsForECS(configFile: Record<string, any>): ECSSecret[] {
+  const configtoenv = obj2env(configFile);
+  const secrets = configtoenv
+    .filter((entry) => entry.split("=")[0].match(/__FROM$/i))
+    .map((entry) => {
+      const [name, value] = entry.split("=");
+      return {
+        name: name.replace(/__FROM$/i, ""),
+        valueFrom: value,
+      };
+    });
+  return secrets;
 }

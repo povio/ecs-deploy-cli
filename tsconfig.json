@@ -7,10 +7,16 @@
     "experimentalDecorators": true,
     "outDir": "./bin",
     "module": "commonjs",
-    "rootDir": "./src",
-    "resolveJsonModule": true
+    "baseUrl": "src",
+    "sourceRoot": "/",
+    "resolveJsonModule": true,
+    "paths": {
+      "~*": [
+        "./*"
+      ]
+    }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*"],
   "ts-node": {
     "transpileOnly": true,
     "transpiler": "ts-node/transpilers/swc-experimental"
