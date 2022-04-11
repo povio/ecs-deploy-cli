@@ -7,7 +7,7 @@ Features:
 - Environment and SSM credentias storage conventions
 - CircleCi pipeline example
 - Cross-platform (made with TypeScript/Javascript, external requirements: `git`, `docker`)
-- Uses the config structure `.env.${STAGE}`
+- Uses the config.yaml structure
 
 Examples:
 
@@ -15,7 +15,6 @@ Examples:
 
 # WIP
 
-- [ ] build/deploy for next.js
 - [ ] mac m1 support for docker build
 
 # Usage
@@ -30,23 +29,35 @@ yarn up ecs-deploy-cli@poviolabs/ecs-deploy-cli
 
 ## Configure
 
-### .env.${STAGE}
-```dotenv
-AWS_ACCOUNT_ID=
-AWS_REGION=eu-central-1
-AWS_REPO_NAME=my-app
-ECS_TASK_FAMILY=my-app-backend
-ECS_CLUSTER_NAME=my-app
-ECS_SERVICE_NAME=my-app-backend
-```
+### config.yaml
+```yaml
 
-### .env.${STAGE}.secrets
+stages:
+  myapp-dev:
 
-For local running (do not commit to git, use ENV within CI)
+    ecs_deploy:
 
-```dotenv
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
+      AWS_REPO_NAME: myapp
+      ECS_TASK_FAMILY: myapp-dev-backend
+      ECS_SERVICE_NAME: myapp-dev-backend
+      ECS_CLUSTER_NAME: myapp-dev
+
+      # relative to PWD
+      # DOCKER_PATH: ./Dockerfile
+
+    ecs_env:
+      # variables can be injected directly into ECS
+      #  but one should stick with this file by default
+      #  to avoid the ECS task environment size limit
+      # TYPEORM_DATABASE: myapp
+
+    ecs_secrets:
+      TYPEORM_PASSWORD: 'arn:aws:secretsmanager:eu-central-1:000000000000:....'
+      app__auth__secret: 'arn:aws:ssm:eu-central-1:000000000000:/myapp-dev/secret'
+
+    # optionally, have a dot-env locally
+    #  remember to gitignore!
+    env_files: [ '.env.myapp-dev.secrets' ]
 ```
 
 ## Run
@@ -88,7 +99,7 @@ If the ECS task got corrupted, you can use this flag to deploy a new one based o
 
 ## Development
 
-The tool can be run locally when a deploy target is set up within .env.test.secrets
+Set up `./test/secrets.env` with credentials to do a E2E test.
 
 ```bash
 # test with ts-node
