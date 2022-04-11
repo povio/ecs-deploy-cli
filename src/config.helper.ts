@@ -31,6 +31,10 @@ export function loadConfig(
   stage: string,
   fileName: string = process.env.CONFIG_FILE || "config.yaml"
 ): Config {
+  if (!root || !stage) {
+    throw new Error("Stage not defined");
+  }
+
   const config: Config = {
     environment: {},
     env_files: [],

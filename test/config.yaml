@@ -1,0 +1,9 @@
+stages:
+  test:
+    env_files: ['secrets.env']
+    ecs_deploy:
+      DOCKER_PATH: ./test/Dockerfile
+
+    ecs_env:
+
+    ecs_secrets:

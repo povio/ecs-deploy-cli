@@ -28,9 +28,9 @@ export async function getRelease(
     const git = simpleGit(pwd);
     const gitSha = await git.revparse("HEAD");
     if (strategy === "gitsha-stage" && addon) {
-      return `${gitSha}-${addon}`
+      return `${gitSha}-${addon}`;
     }
-    return gitSha
+    return gitSha;
   } catch (e) {
     console.log(e);
     return undefined;

@@ -16,4 +16,4 @@ node_modules
 /test/data
 src/*.js
 
-.env.*.secrets
+test/secrets.env

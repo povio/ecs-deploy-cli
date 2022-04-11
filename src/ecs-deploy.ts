@@ -6,7 +6,7 @@ import yargs from "yargs";
 import semver from "semver";
 
 import { getRelease } from "./git.helper";
-import { getYargsOptions, Option, Options } from "./yargs.helper";
+import { getYargsOptions, Option } from "./yargs.helper";
 import cli, { chk } from "./cli.helper";
 import {
   ecrImageExists,
@@ -16,7 +16,7 @@ import {
   ecsWatch,
 } from "./aws.helper";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
-import { getSecretsForECS } from "./config";
+import { getSecretsForECS } from "./config.helper";
 
 class EcsDeployOptions extends Options {
   @Option({ envAlias: "PWD", demandOption: true })

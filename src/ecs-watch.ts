@@ -4,7 +4,12 @@
 
 import yargs from "yargs";
 
-import { getYargsOptions, Option, Options } from "./yargs.helper";
+import {
+  getYargsOptions,
+  loadYargsConfig,
+  Option,
+  Options,
+} from "./yargs.helper";
 import cli, { chk } from "./cli.helper";
 import { ecsWatch } from "./aws.helper";
 
@@ -38,7 +43,7 @@ export const command: yargs.CommandModule = {
     return y
       .options(getYargsOptions(EcsWatchOptions))
       .middleware(async (_argv) => {
-        return new EcsWatchOptions(await _argv, true);
+        return loadYargsConfig(EcsWatchOptions, _argv as any) as any;
       }, true);
   },
   handler: async (_argv) => {

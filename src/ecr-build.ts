@@ -6,16 +6,21 @@
 import yargs from "yargs";
 import cli, { chk } from "./cli.helper";
 
-import { getGitChanges, getRelease } from "./git.helper";
-import { Options, Option, getYargsOptions } from "./yargs.helper";
+import { getGitChanges, getRelease } from "~git.helper";
+import {
+  Option,
+  getYargsOptions,
+  loadYargsConfig,
+  Config,
+} from "~yargs.helper";
 import {
   ecrGetDockerCredentials,
   ecrGetLatestImageTag,
   ecrImageExists,
-} from "./aws.helper";
+} from "~aws.helper";
 import docker from "./docker.helper";
 
-class EcrBuildOptions extends Options {
+class EcrBuildOptions {
   @Option({ envAlias: "PWD", demandOption: true })
   pwd: string;
 
@@ -59,6 +64,8 @@ class EcrBuildOptions extends Options {
 
   @Option({ envAlias: "VERBOSE", default: false })
   verbose: boolean;
+
+  config: Config;
 }
 
 export const command: yargs.CommandModule = {
@@ -68,10 +75,11 @@ export const command: yargs.CommandModule = {
     return y
       .options(getYargsOptions(EcrBuildOptions))
       .middleware(async (_argv) => {
-        const argv = new EcrBuildOptions(await _argv, true);
+        const argv = loadYargsConfig(EcrBuildOptions, _argv as any);
         argv.release =
           argv.release || (await getRelease(argv.pwd, argv.releaseStrategy));
-        return argv;
+
+        return argv as any;
       }, true);
   },
   handler: async (_argv) => {
@@ -159,7 +167,7 @@ export const command: yargs.CommandModule = {
     cli.banner("Build Step");
 
     if (argv.dockerPath !== "Dockerfile") {
-      cli.notice(`Dockerfile path: ${ argv.dockerPath}`);
+      cli.notice(`Dockerfile path: ${argv.dockerPath}`);
     }
 
     if (await docker.imageExists(imageName)) {

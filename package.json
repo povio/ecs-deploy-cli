@@ -4,8 +4,8 @@
   "packageManager": "yarn@3.1.1",
   "scripts": {
     "lint": "exlint --fix",
-    "test:ts-node": "STAGE=test ts-node ./src/index.ts",
-    "test": "STAGE=test ./dist/index.js",
+    "test:ts-node": "ts-node -r tsconfig-paths/register ./src/index.ts --pwd ./test --stage test",
+    "test": "./dist/index.js --pwd ./test --stage test",
     "build": "yarn version patch && yarn ncc build ./src/index.ts -m --no-source-map-register && chmod +x ./dist/index.js",
     "clean": "rm ./dist/*"
   },
@@ -64,6 +64,7 @@
     "source-map-support": "^0.5.21",
     "ts-jest": "^27.1.4",
     "ts-node": "^10.7.0",
+    "tsconfig-paths": "^3.14.1",
     "typescript": "4.6.3",
     "yaml": "^1.10.2",
     "yargs": "^17.4.0"
