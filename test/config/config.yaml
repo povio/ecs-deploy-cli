@@ -6,7 +6,7 @@ default: &default
   from_default_yaml_process_env_override: wrong1
 
 stages:
-  test:
+  test: &test
     <<: *default
     yaml_override: wrong
     from_config: correct
@@ -20,3 +20,7 @@ stages:
       app__from_default_yaml_env_override: wrong2
       app__from_default_yaml_process_env_override: wrong5
     env_files: ['config.env']
+
+  test-worker:
+    <<: *test
+    stage: "test"

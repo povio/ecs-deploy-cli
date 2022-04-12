@@ -29,40 +29,57 @@ export interface Config extends ConfigItem {
 export function loadConfig(
   root: string,
   stage: string,
-  fileName: string = process.env.CONFIG_FILE || "config.yaml",
-  globalPrefix = process.env.CONFIG_PREFIX || "app"
+  options: {
+    service?: string;
+    configFileName?: string;
+    globalPrefix?: string;
+  } = {}
 ): Config {
+  const globalPrefix =
+    options.globalPrefix || process.env.CONFIG_PREFIX || "app";
+
+  const configFileName =
+    options.configFileName || process.env.CONFIG_FILE || "config.yaml";
+
   if (!root || !stage) {
     throw new Error("Stage not defined");
   }
 
+  const service = options.service || undefined;
+
   let config: Config;
   {
-    const yamlPath = path.join(root, fileName);
+    const yamlPath = path.join(root, configFileName);
     if (!fs.existsSync(yamlPath)) {
       // the config file is required
       throw new Error(`Couldn't find configuration file "${yamlPath}"`);
     }
 
+    const configName = service || stage;
+
     const yamlConfig = readYaml(yamlPath);
-    if (!yamlConfig.stages[stage]) {
-      throw new Error(`Stage "${stage}" not found in ${fileName}`);
+    if (!yamlConfig.stages[configName]) {
+      throw new Error(`Stage "${configName}" not found in ${configFileName}`);
     }
 
     config = {
+      stage,
       environment: {},
       env_files: [],
       // read tree from .yaml stage
-      ...yamlConfig.stages[stage],
+      ...yamlConfig.stages[configName],
     };
 
-    if (fileName === "config.yaml") {
+    if (service) {
+      config.service = service;
+    }
+
+    if (configFileName === "config.yaml") {
       if (fs.existsSync(path.join(root, "config.local.yaml"))) {
         const localYamlConfig = readYaml(path.join(root, "config.local.yaml"));
-        if (!localYamlConfig.stages[stage]) {
-          throw new Error(`Stage "${stage}" not found in config.local.yaml`);
+        if (localYamlConfig.stages[configName]) {
+          mergeDeep(config, localYamlConfig.stages[configName]);
         }
-        mergeDeep(config, localYamlConfig.stages[stage]);
       }
     }
   }

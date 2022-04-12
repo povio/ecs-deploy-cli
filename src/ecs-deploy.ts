@@ -7,7 +7,7 @@ import semver from "semver";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
 import { getRelease } from "~git.helper";
-import cli, { chk } from "./cli.helper";
+import cli, { chk } from "~cli.helper";
 import {
   Option,
   getYargsOptions,
@@ -28,6 +28,9 @@ class EcsDeployOptions extends Options {
 
   @Option({ envAlias: "STAGE", demandOption: true })
   stage: string;
+
+  @Option({ envAlias: "SERVICE" })
+  service: string;
 
   @Option({ envAlias: "RELEASE", demandOption: true })
   release: string;
@@ -67,8 +70,8 @@ class EcsDeployOptions extends Options {
   @Option({ envAlias: "VERBOSE", default: false })
   verbose: boolean;
 
-  @Option({ envAlias: "VERSION", type: "string" })
-  ecsVersion: string;
+  @Option({ envAlias: "VERSION", type: "string", alias: "ecsVersion" })
+  appVersion: string;
 
   @Option({
     type: "string",
@@ -143,11 +146,19 @@ export const command: yargs.CommandModule = {
     const previousContainerDefinition =
       previousTaskDefinition.containerDefinitions[0];
 
-    let version = argv.ecsVersion;
+    const globalPrefix = process.env.CONFIG_PREFIX || "app";
+
+    //  get previous environment
+    const taskDefinitionContainerEnvironment =
+      previousContainerDefinition.environment.reduce((acc, cur) => {
+        acc[cur.name] = cur.value;
+        return acc;
+      }, {} as Record<string, string>);
+
+    let version = argv.appVersion;
     if (!version) {
-      const previousVersion = previousContainerDefinition.environment?.find(
-        (x) => x.name === "VERSION"
-      )?.value;
+      const previousVersion =
+        taskDefinitionContainerEnvironment[`${globalPrefix}__version`];
       if (previousVersion) {
         const cleanedVersion = semver.clean(
           previousVersion.replace(/^([^0-9]+)/, "")
@@ -155,7 +166,7 @@ export const command: yargs.CommandModule = {
         if (!cleanedVersion) {
           cli.warning("Version could not be parsed");
         } else {
-          // Make the version ${stage}-0.0.1
+          // make the version ${stage}-0.0.1
           version = `${argv.stage}-${semver.inc(cleanedVersion, "patch")}`;
           cli.info("Incrementing version");
         }
@@ -163,15 +174,8 @@ export const command: yargs.CommandModule = {
         cli.notice("No version provided");
       }
     } else {
-      cli.variable("VERSION", version);
+      cli.variable(`${globalPrefix}__version`, version);
     }
-
-    //  Get previous environment
-    const taskDefinitionContainerEnvironment =
-      previousContainerDefinition.environment.reduce((acc, cur) => {
-        acc[cur.name] = cur.value;
-        return acc;
-      }, {} as Record<string, string>);
 
     // override task container env from config.yaml
     if (argv.config.ecs_env && typeof argv.config.ecs_env === "object") {
@@ -184,10 +188,24 @@ export const command: yargs.CommandModule = {
 
     // override version
     if (version) {
-      taskDefinitionContainerEnvironment.VERSION = version;
+      taskDefinitionContainerEnvironment[`${globalPrefix}__version`] = version;
     }
 
-    // Get previous secret pointers
+    // check/set stage
+    if (!taskDefinitionContainerEnvironment[`${globalPrefix}__stage`]) {
+      taskDefinitionContainerEnvironment[`${globalPrefix}__stage`] = argv.stage;
+    } else if (
+      taskDefinitionContainerEnvironment[`${globalPrefix}__stage`] !==
+      argv.stage
+    ) {
+      throw new Error(
+        `Stage mismatch - tried to deploy to ${
+          taskDefinitionContainerEnvironment[`${globalPrefix}__stage`]
+        }`
+      );
+    }
+
+    // get previous secret pointers
     const taskDefinitionContainerSecrets: Record<string, string> =
       previousContainerDefinition.secrets.reduce((acc, cur) => {
         acc[cur.name] = cur.valueFrom;

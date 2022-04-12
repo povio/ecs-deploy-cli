@@ -60,6 +60,7 @@ export function getYargsOptions<T>(target: any): Record<keyof T, YargsOptions> {
 
 export class Options {
   stage: string;
+  service?: string;
   pwd: string;
   config: Config;
 }
@@ -74,10 +75,19 @@ export function loadYargsConfig<T extends Options>(
     (_argv.pwd as string) || process.env.PWD || process.cwd()
   );
   if (!argv.pwd) throw new Error("No PWD given");
-  argv.stage = (_argv.stage as string) || process.env.STAGE;
+  argv.stage =
+    (_argv.stage as string) ||
+    process.env[`${process.env.CONFIG_PREFIX}__version`] ||
+    process.env.STAGE;
   if (!argv.stage) throw new Error("No Stage defined");
 
-  const config = loadConfig(argv.pwd, argv.stage);
+  let config;
+  if (_argv.service) {
+    argv.service = _argv.service as string;
+    config = loadConfig(argv.pwd, argv.stage, { service: argv.service });
+  } else {
+    config = loadConfig(argv.pwd, argv.stage);
+  }
 
   for (const [name, o] of Object.entries(getOptions(cls))) {
     if (["pwd", "stage", "config"].includes(name)) {

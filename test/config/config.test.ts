@@ -94,6 +94,36 @@ describe("config", () => {
     expect(process.env.app__yaml_override).toEqual("correct");
 
     expect(config).toEqual({
+      stage: "test",
+      yaml_override: "correct",
+      from_config: "correct",
+      from_env: "correct",
+      from_default_yaml: "correct",
+      from_default_yaml_override: "correct",
+      from_default_yaml_env_override: "correct",
+      from_default_yaml_process_env_override: "correct",
+      environment: {
+        app__yaml_override: "correct",
+        app__from_env: "wrong_again",
+        app__from_default_yaml_env_override: "wrong2",
+        app__from_default_yaml_process_env_override: "wrong5",
+      },
+      env_files: ["config.env"],
+      yaml_local_override: "correct",
+    });
+  });
+
+  test("it should load an example yaml with service", () => {
+    process.env.app__from_default_yaml_process_env_override = "correct";
+
+    const config = loadConfig(__dirname, "test", { service: "test-worker" });
+
+    expect(process.env.app__from_env).toEqual("correct");
+    expect(process.env.app__yaml_override).toEqual("correct");
+
+    expect(config).toEqual({
+      service: "test-worker",
+      stage: "test",
       yaml_override: "correct",
       from_config: "correct",
       from_env: "correct",

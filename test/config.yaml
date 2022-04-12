@@ -6,6 +6,6 @@ stages:
       DOCKER_PATH: ./Dockerfile
 
     ecs_env:
-      test_fixed_env: 'test1'
+      app__test_fixed_env: 'test1'
     ecs_secrets:
-      test_secret: 'arn::::'
+      app__test_secret: 'arn::::'

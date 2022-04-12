@@ -98,6 +98,27 @@ Speed up builds if you know the ECR image does not exist. (build only)
 
 If the ECS task got corrupted, you can use this flag to deploy a new one based on a sane version. Defaults to the latest one. (deploy only)
 
+#### --service
+
+If the stage has multiple services, you can define the one you want to deploy here.
+
+Example configuration
+
+```yaml
+stages:
+  myapp-prd: &myapp-prd
+    yaml_local_override: correct
+
+  myapp-prd-worker:
+    <<: *myapp-prd
+    stage: myapp-prd
+```
+
+#### Overriding config and global prefix
+
+CONFIG_PREFIX=app
+CONFIG_FILE=config.yaml
+
 ## Development
 
 Set up `./test/secrets.env` with credentials to do a E2E test.
