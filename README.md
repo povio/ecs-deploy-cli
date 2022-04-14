@@ -13,10 +13,6 @@ Examples:
 
 - [NestJs](./examples/nestjs) Docker and Pipeline
 
-# WIP
-
-- [ ] mac m1 support for docker build
-
 # Usage
 
 ```bash
@@ -97,6 +93,18 @@ Speed up builds if you know the ECR image does not exist. (build only)
 #### --ecsBaseTaskVersion
 
 If the ECS task got corrupted, you can use this flag to deploy a new one based on a sane version. Defaults to the latest one. (deploy only)
+
+#### --skipPush
+
+Only build the image. Usefull for testing.
+
+#### --platform
+
+Set the platform explicitly, defaults to "linux/amd64"
+
+#### --buildx
+
+Use [docker buildx](https://docs.docker.com/buildx/working-with-buildx/) to build on ARM / Apple M1.
 
 #### --service
 
