@@ -20,7 +20,7 @@ import {
   ecrGetLatestImageTag,
   ecrImageExists,
 } from "~aws.helper";
-import docker from "~docker.helper";
+import { Docker } from "~docker.helper";
 
 class EcrBuildOptions extends YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -61,8 +61,8 @@ class EcrBuildOptions extends YargsOptions {
   @Option({ envAlias: "SKIP_ECR_EXISTS_CHECK" })
   skipEcrExistsCheck: boolean;
 
-  @Option({ envAlias: "DOCKER_PATH", default: "Dockerfile" })
-  dockerPath: string;
+  @Option({ envAlias: "DOCKERFILE_PATH", default: "Dockerfile" })
+  dockerFilePath: string;
 
   @Option({ envAlias: "VERBOSE", default: false })
   verbose: boolean;
@@ -110,12 +110,20 @@ export const command: yargs.CommandModule = {
       }
     }
 
+    const docker = new Docker({
+      // verbose: true,
+      cwd: argv.pwd,
+      env: Object.entries(process.env)
+        .filter((x) => x[0].startsWith("DOCKER_"))
+        .reduce((acc, [key, value]) => {
+          acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>),
+    });
+
     cli.variable("RELEASE", argv.release);
 
-    cli.info(`Docker Version: ${await docker.version()}`);
-    for (const [k, v] of Object.entries(docker.options.env)) {
-      cli.variable(k, v);
-    }
+    cli.info(`Docker Version: ${(await docker.version()).data}`);
 
     // load ECR details
     const imageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${argv.release}`;
@@ -124,18 +132,18 @@ export const command: yargs.CommandModule = {
 
     let ecrCredentials;
 
-    const dockerLogin = async () => {
+    const runDockerLogin = async () => {
       if (ecrCredentials) return;
 
       cli.info("Setting up AWS Docker Auth...");
       ecrCredentials = await ecrGetDockerCredentials({
         region: argv.awsRegion,
       });
-      await docker.login(
-        ecrCredentials.endpoint,
-        "AWS",
-        ecrCredentials.password
-      );
+      await docker.login({
+        serveraddress: ecrCredentials.endpoint,
+        username: "AWS",
+        password: ecrCredentials.password,
+      });
       cli.info("AWS ECR Docker Login succeeded");
     };
 
@@ -155,7 +163,7 @@ export const command: yargs.CommandModule = {
     let previousImageName;
     if (argv.ecrCache) {
       // use the previous image for cache
-      await dockerLogin();
+      await runDockerLogin();
 
       const previousImageTag = await ecrGetLatestImageTag({
         region: argv.awsRegion,
@@ -168,47 +176,40 @@ export const command: yargs.CommandModule = {
 
     cli.banner("Build Step");
 
-    const dockerPath = path.join(argv.pwd, argv.dockerPath);
-    cli.notice(`Dockerfile path: ${dockerPath}`);
+    const dockerFilePath = path.join(argv.pwd, argv.dockerFilePath);
+    cli.notice(`Dockerfile path: ${dockerFilePath}`);
 
-    if (await docker.imageExists(imageName)) {
+    if ((await docker.imageExists(imageName)).data) {
       cli.info("Reusing docker image");
     } else {
       cli.info("Building docker image");
 
-      await docker.imageBuild(
+      await docker.imageBuild({
         imageName,
-        argv.release,
-        dockerPath,
-        previousImageName
-      );
+        src: [argv.dockerFilePath],
+        buildargs: { RELEASE: argv.release },
+        context: argv.pwd,
+        previousImageName,
+      });
     }
 
     cli.banner("Push step");
 
-    try {
-      await dockerLogin();
+    await runDockerLogin();
 
-      if (!argv.ci) {
-        if (!(await cli.confirm("Press enter to upload image to ECR..."))) {
-          cli.info("Canceled");
-          return;
-        }
-      }
-
-      await docker.imagePush(imageName);
-
-      cli.info(
-        `Done! Deploy the service with yarn ${chk.magenta(
-          `ecs-deploy-cli deploy --stage ${argv.stage}`
-        )}`
-      );
-    } catch (e) {
-      throw e;
-    } finally {
-      if (ecrCredentials) {
-        await docker.logout(ecrCredentials.endpoint);
+    if (!argv.ci) {
+      if (!(await cli.confirm("Press enter to upload image to ECR..."))) {
+        cli.info("Canceled");
+        return;
       }
     }
+
+    await docker.imagePush(imageName);
+
+    cli.info(
+      `Done! Deploy the service with yarn ${chk.magenta(
+        `ecs-deploy-cli deploy --stage ${argv.stage}`
+      )}`
+    );
   },
 };

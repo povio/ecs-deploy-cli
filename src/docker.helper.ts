@@ -1,89 +1,245 @@
-import { dockerCommand } from "docker-cli-js";
-import cli from "~cli.helper";
+import { exec } from "child_process";
 
-const options = {
-  echo: true,
-  // pass DOCKER_ env into the command to set remote docker machines
-  env: Object.entries(process.env)
-    .filter((x) => x[0].startsWith("DOCKER_"))
-    .reduce((acc, [key, value]) => {
-      acc[key] = value;
-      return acc;
-    }, {} as Record<string, string>),
-};
+interface CommandOptions {
+  echo?: boolean;
+  stdin?: string;
+  dryRun?: boolean;
+  mockResponse?: string;
+}
 
-export async function version() {
-  try {
-    return (await dockerCommand("--version", options)).raw
-      .replace(/"|\\n/, "")
-      .trim();
-  } catch (e) {
-    if (process.env.VERBOSE) {
-      cli.verbose((e as string).toString());
+interface CommandResponse<T> {
+  raw?: string;
+  data?: T;
+  execCommand: string;
+  execOptions?: any;
+  error?: any;
+}
+
+export class Docker {
+  private cwd: string;
+  private verbose: boolean;
+  private env: Record<string, string>;
+
+  constructor(
+    options: {
+      cwd?: string;
+      env?: Record<string, string>;
+      verbose?: boolean;
+    } = {}
+  ) {
+    this.cwd = options.cwd || process.cwd();
+    this.env = options.env || {};
+    this.verbose = !!options.verbose;
+  }
+
+  public async version(
+    options?: CommandOptions
+  ): Promise<CommandResponse<string>> {
+    return this.handleResponse(
+      "version --format '{{json .}}'",
+      options,
+      (response) => {
+        const data = JSON.parse(response.raw);
+        return `Client: ${data.Client.Version}`;
+      }
+    );
+  }
+
+  public async login(
+    data: {
+      serveraddress?: string;
+      username: string; // todo escape this
+      password: string;
+      // email?: string;
+    },
+    options?: CommandOptions
+  ) {
+    return this.handleResponse(
+      `login --username ${data.username} --password-stdin ${data.serveraddress}`,
+      { ...options, stdin: data.password },
+      (response) => {
+        /// response === "Login Succeeded"
+        return /Login Succeeded/.test(response.raw);
+      }
+    );
+  }
+
+  public async logout(
+    data: {
+      serveraddress?: string;
+    },
+    options?: CommandOptions
+  ) {
+    return this.handleResponse(
+      `logout  ${data.serveraddress}`,
+      options,
+      (response) => {
+        return;
+      }
+    );
+  }
+
+  public async imagePull(imageName: string, options?: CommandOptions) {
+    return this.handleResponse(`pull ${imageName}`, options, (response) => {
+      return undefined;
+    });
+  }
+
+  public async imageExists(imageName: string, options?: CommandOptions) {
+    return this.handleResponse(
+      `image inspect ${imageName} --format="found"`,
+      options,
+      (response) => {
+        return /found/.test(response.raw);
+      },
+      (e) => {
+        if (/No such image/.test(e.message)) {
+          return false;
+        }
+        throw e;
+      }
+    );
+  }
+
+  public async imageBuild(
+    buildOptions: {
+      context: string;
+      src: string[];
+      imageName: string;
+      previousImageName?: string;
+      buildargs?: { [key: string]: string };
+      noCache?: boolean;
+    },
+    options?: CommandOptions
+  ) {
+    let command = `build --progress plain -t "${buildOptions.imageName}" `;
+
+    for (const s of buildOptions.src) {
+      command += `-f ${s} `;
     }
-    return undefined;
+
+    for (const [k, v] of Object.entries(buildOptions.buildargs || {})) {
+      command += `--build-arg ${k}="${v}" `;
+    }
+
+    if (buildOptions.noCache) {
+      command += "--no-cache ";
+    }
+
+    if (buildOptions.previousImageName) {
+      command += `--cache-from ${buildOptions.previousImageName} "`;
+    }
+
+    command += buildOptions.context ?? process.cwd();
+
+    return this.handleResponse(command, options, (response) => {
+      return undefined;
+    });
+  }
+
+  public async imagePush(imageName: string, options?: CommandOptions) {
+    return this.handleResponse(`push ${imageName}`, options, (response) => {
+      return undefined;
+    });
+  }
+
+  private async handleResponse<T>(
+    execCommand: string,
+    options: CommandOptions = {},
+    parser: (rawResponse: CommandResponse<undefined>) => T,
+    onError?: (e: any) => T
+  ): Promise<CommandResponse<T>> {
+    let response: CommandResponse<any> = { execCommand };
+    try {
+      // dry run and unit tests
+      if (options.dryRun || options.mockResponse) {
+        return {
+          execCommand,
+          raw: options.mockResponse,
+          data:
+            options.mockResponse && !options.dryRun
+              ? parser({ execCommand, raw: options.mockResponse })
+              : undefined,
+        };
+      }
+
+      // execute docker command and parse response
+      response = await this.execute(execCommand, options);
+      return {
+        ...response,
+        data: parser(response),
+      };
+    } catch (e) {
+      e.response = response;
+      if (onError) {
+        return {
+          ...response,
+          error: e,
+          data: onError(e),
+        };
+      }
+      throw e;
+    }
+  }
+
+  private async execute(
+    execCommand: string,
+    options: CommandOptions = {}
+  ): Promise<CommandResponse<undefined>> {
+    const execOptions = {
+      cwd: this.cwd,
+      env: {
+        DEBUG: "",
+        HOME: process.env.HOME,
+        PATH: process.env.PATH,
+        ...(this.env ? this.env : {}),
+      },
+      maxBuffer: 200 * 1024 * 1024,
+    };
+
+    const raw: string = await new Promise((resolve, reject) => {
+      if (this.verbose) {
+        console.log(`[DOCKER] docker ${execCommand}`);
+      }
+
+      const childProcess = exec(
+        `docker ${execCommand}`,
+        execOptions,
+        (error, stdout, stderr) => {
+          if (error) {
+            return reject(
+              Object.assign(
+                new Error(`Error: stdout ${stdout}, stderr ${stderr}`),
+                { ...error, stdout, stderr, innerError: error }
+              )
+            );
+          }
+
+          resolve(stdout);
+        }
+      );
+
+      if (options.stdin) {
+        childProcess.stdin.write(options.stdin);
+        childProcess.stdin.end();
+      }
+
+      if (this.verbose || options.echo) {
+        childProcess.stdout.on("data", (chunk) => {
+          process.stdout.write(chunk.toString());
+        });
+
+        childProcess.stderr.on("data", (chunk) => {
+          process.stderr.write(chunk.toString());
+        });
+      }
+    });
+
+    return {
+      raw,
+      data: undefined,
+      execCommand: execCommand,
+      execOptions: execOptions,
+    };
   }
 }
-
-export async function imageExists(imageName: string): Promise<boolean> {
-  const images = await dockerCommand(`images ${imageName}`, {
-    ...options,
-    echo: false,
-  });
-  if (process.env.VERBOSE) {
-    cli.verbose(JSON.stringify(images));
-  }
-  return "images" in images && images.images.length > 0;
-}
-
-export async function imageBuild(
-  imageName: string,
-  release: string,
-  dockerFile: string,
-  previousImageName?: string
-) {
-  await dockerCommand(
-    `build --progress plain -t "${imageName}" -f "${dockerFile}" ${
-      previousImageName ? `--cache-from ${previousImageName}` : ""
-    } . --build-arg RELEASE="${release}"`,
-    options
-  );
-}
-
-export async function imagePush(imageName: string) {
-  await dockerCommand(`push ${imageName}`, options);
-}
-
-export async function imagePull(imageName: string) {
-  await dockerCommand(`pull ${imageName}`, options);
-}
-
-export async function login(
-  server: string,
-  username: string,
-  password: string
-) {
-  const response = await dockerCommand(
-    `-l "debug" login --username ${username} --password ${password} ${server}`,
-    { ...options, echo: false }
-  );
-  if (process.env.VERBOSE) {
-    cli.verbose(JSON.stringify(response));
-  }
-  return response.login && response.login === "Login Succeeded";
-}
-
-export async function logout(server: string) {
-  await dockerCommand(`logout ${server}`, { ...options, echo: false });
-}
-
-export default {
-  version,
-  logout,
-  login,
-  imageBuild,
-  imageExists,
-  imagePush,
-  imagePull,
-  options,
-};

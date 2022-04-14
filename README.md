@@ -121,6 +121,8 @@ CONFIG_FILE=config.yaml
 
 ## Development
 
+### Test locally
+
 Set up `./test/secrets.env` with credentials to do a E2E test.
 
 ```bash
@@ -133,3 +135,10 @@ yarn build
 # test build
 yarn test --help
 ```
+
+### Analyze package
+
+```bash
+npx webpack-bundle-analyzer ./dist/stats.json
+```
+
