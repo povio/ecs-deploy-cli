@@ -56,7 +56,7 @@ export function loadConfig(
       throw new Error(`Couldn't find configuration file "${yamlPath}"`);
     }
 
-    const configName = service || stage;
+    const configName = service ? `${stage}-${service}` : stage;
 
     const yamlConfig = readYaml(yamlPath);
     if (!yamlConfig.stages[configName]) {

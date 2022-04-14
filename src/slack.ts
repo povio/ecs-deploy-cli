@@ -12,7 +12,7 @@ import {
   YargsOptions,
 } from "~yargs.helper";
 
-import { getCommitMessage, getRelease } from "~git.helper";
+import { getCommitMessage, getRelease, getSha, getShortSha } from "~git.helper";
 import * as process from "process";
 
 class SlackOptions extends YargsOptions {
@@ -82,7 +82,6 @@ export const command: yargs.CommandModule = {
       process.env.CIRCLE_BRANCH || process.env.BITBUCKET_BRANCH;
     const repoName =
       process.env.CIRCLE_PROJECT_REPONAME || process.env.BITBUCKET_REPO_SLUG;
-    const userName = process.env.CIRCLE_USERNAME;
     const buildUrl = process.env.CIRCLE_BUILD_URL;
 
     const slackToken = argv.slackToken;
@@ -90,10 +89,13 @@ export const command: yargs.CommandModule = {
       argv.slackChannel || argv.config.ecs_deploy?.slackChannel;
     const slackAutolinkPrefix = argv.config.ecs_deploy?.slackAutolinkPrefix;
     const slackAutolinkTarget = argv.config.ecs_deploy?.slackAutolinkTarget;
+    const slackCommitPrefix = argv.config.ecs_deploy?.slackCommitPrefix;
+    const slackProjectName = argv.config.ecs_deploy?.slackProjectName;
+
+    const gitSha = await getSha(pwd);
+    const gitShortSha = await getShortSha(pwd);
 
     const web = new WebClient(slackToken);
-
-    // <http://www.example.com|This message *is* a link>
 
     const templates = {
       success: {
@@ -107,23 +109,47 @@ export const command: yargs.CommandModule = {
       },
     };
 
-    let message = `${templates[argv.messageType].icon}`;
+    let message = `${templates[argv.messageType].icon} `;
+
+    if (slackProjectName) {
+      message += `*${slackProjectName}* `;
+    }
+
+    const deployName = `${repoName ? `${repoName}:` : ""}${
+      appVersion || branchName || ""
+    }`;
+
+    let text = `[${templates[argv.messageType].icon}] ${deployName}`;
+
+    if (argv.message) {
+      text += ` ${argv.message}`;
+    }
 
     if (buildUrl) {
-      message += `<${buildUrl}|${repoName}:${appVersion || branchName}>`;
+      message += `<${buildUrl}|${deployName}>`;
     } else {
-      message += `${repoName}:${appVersion || branchName}`;
+      message += deployName;
+    }
+
+    if (service) {
+      message += ` Service: ${service}`;
+    }
+
+    if (slackCommitPrefix) {
+      message += `\t :memo: <${slackCommitPrefix}${gitSha}|${gitShortSha}>\t`;
+    } else {
+      message += `\t :memo: ${gitShortSha}\t`;
     }
 
     if (slackAutolinkTarget && slackAutolinkPrefix) {
-      commitMessage.replace(
+      message += `_${commitMessage.replace(
         new RegExp(`\\b${slackAutolinkPrefix}[a-zA-Z0-9]+\\b`, "gm"),
         (a) => {
-          return `<${slackAutolinkPrefix}|${a}>`;
+          return `<${slackAutolinkTarget}|${a}>`;
         }
-      );
+      )}_`;
     } else {
-      message += `\n  ${release}: ${commitMessage}`;
+      message += `_${commitMessage}_`;
     }
 
     if (argv.message) {
@@ -140,6 +166,7 @@ export const command: yargs.CommandModule = {
           },
         },
       ],
+      text,
       channel: slackChannel,
       unfurl_links: false,
       unfurl_media: false,

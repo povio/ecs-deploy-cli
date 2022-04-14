@@ -1,5 +1,5 @@
 stages:
-  test:
+  test: &test
     env_files: ['secrets.env']
     ecs_deploy:
       # relative to PWD
@@ -7,9 +7,15 @@ stages:
 
       slackChannel: C03AXDS9F2B
       slackAutolinkPrefix: SP-
-      slackAutolinkTarget: https://github.com/poviolabs/spa-deploy-cli/issues/
+      slackAutolinkTarget: https://github.com/poviolabs/ecs-deploy-cli/issues/
+      slackCommitPrefix: https://github.com/poviolabs/ecs-deploy-cli/commit/
+      slackProjectName: ECS-Deploy
 
     ecs_env:
       app__test_fixed_env: 'test1'
     ecs_secrets:
       app__test_secret: 'arn::::'
+
+  test-api:
+    <<: *test
+    stage: test

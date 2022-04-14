@@ -22,7 +22,6 @@ yarn add ecs-deploy-cli@poviolabs/ecs-deploy-cli
 yarn up ecs-deploy-cli@poviolabs/ecs-deploy-cli
 ```
 
-
 ## Configure
 
 ### config.yaml
@@ -67,6 +66,9 @@ yarn ecs-deploy-cli build --stage my-stage
 
 # Deploy the image built from the current git commit to ECS
 yarn ecs-deploy-cli deploy --stage my-stage
+
+# display a message into a slack channel with the current commit / release
+yarn ecs-deploy-cli slack --messageType success
 ```
 
 ## Run Options
@@ -126,6 +128,25 @@ stages:
 
 CONFIG_PREFIX=app
 CONFIG_FILE=config.yaml
+
+#### Slack message config
+
+```yaml
+stages:
+  myapp-prd:
+    ecs_deploy:
+      slackChannel: C03AXDS9F2B
+      slackAutolinkPrefix: SP-
+      slackAutolinkTarget: https://github.com/poviolabs/ecs-deploy-cli/issues/
+      slackCommitPrefix: https://github.com/poviolabs/ecs-deploy-cli/commit/
+      slackProjectName: ECS-Deploy
+```
+
+```bash
+yarn ecs-deploy-cli slack --messageType success
+yarn ecs-deploy-cli slack --messageType failure
+yarn ecs-deploy-cli slack --messageType info --message A custom message!
+```
 
 ## Development
 
