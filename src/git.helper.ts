@@ -19,6 +19,11 @@ export async function getGitChanges(pwd: string): Promise<string> {
   }
 }
 
+export async function getCommitMessage(pwd: string) {
+  const git = simpleGit(pwd);
+  return (await git.raw("show", "-s", "--format=%s", "HEAD")).trim();
+}
+
 export async function getRelease(
   pwd: string,
   strategy: "gitsha" | "gitsha-stage" = "gitsha",

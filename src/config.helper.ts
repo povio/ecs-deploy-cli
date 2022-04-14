@@ -5,7 +5,7 @@ import { parse as parseDotenv } from "dotenv";
 import { parse as parseYAML } from "yaml";
 
 interface ConfigItem {
-  [key: string]: Config | string | number | string[];
+  [key: string]: ConfigItem | string | number | string[] | any;
 }
 export interface Config extends ConfigItem {
   /**

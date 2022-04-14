@@ -5,6 +5,10 @@ stages:
       # relative to PWD
       DOCKER_PATH: ./Dockerfile
 
+      slackChannel: C03AXDS9F2B
+      slackAutolinkPrefix: SP-
+      slackAutolinkTarget: https://github.com/poviolabs/spa-deploy-cli/issues/
+
     ecs_env:
       app__test_fixed_env: 'test1'
     ecs_secrets:
