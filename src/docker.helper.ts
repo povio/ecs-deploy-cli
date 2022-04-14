@@ -1,7 +1,7 @@
 import { exec } from "child_process";
 
 interface CommandOptions {
-  echo?: boolean;
+  verbose?: boolean;
   stdin?: string;
   dryRun?: boolean;
   mockResponse?: string;
@@ -40,7 +40,7 @@ export class Docker {
       options,
       (response) => {
         const data = JSON.parse(response.raw);
-        return `Client: ${data.Client.Version}`;
+        return `Client ${data.Client.Version} Server ${data.Server.Version}`;
       }
     );
   }
@@ -58,8 +58,8 @@ export class Docker {
       `login --username ${data.username} --password-stdin ${data.serveraddress}`,
       { ...options, stdin: data.password },
       (response) => {
-        /// response === "Login Succeeded"
-        return /Login Succeeded/.test(response.raw);
+        if (/Login Succeeded/.test(response.raw)) return true;
+        throw new Error("Invalid response while logging in");
       }
     );
   }
@@ -224,7 +224,7 @@ export class Docker {
         childProcess.stdin.end();
       }
 
-      if (this.verbose || options.echo) {
+      if (this.verbose || options.verbose) {
         childProcess.stdout.on("data", (chunk) => {
           process.stdout.write(chunk.toString());
         });

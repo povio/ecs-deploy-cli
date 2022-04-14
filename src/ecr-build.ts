@@ -19,6 +19,7 @@ import {
   ecrGetDockerCredentials,
   ecrGetLatestImageTag,
   ecrImageExists,
+  getAwsIdentity,
 } from "~aws.helper";
 import { Docker } from "~docker.helper";
 
@@ -111,7 +112,7 @@ export const command: yargs.CommandModule = {
     }
 
     const docker = new Docker({
-      // verbose: true,
+      verbose: argv.verbose,
       cwd: argv.pwd,
       env: Object.entries(process.env)
         .filter((x) => x[0].startsWith("DOCKER_"))
@@ -136,6 +137,10 @@ export const command: yargs.CommandModule = {
       if (ecrCredentials) return;
 
       cli.info("Setting up AWS Docker Auth...");
+
+      const identity = await getAwsIdentity({ region: argv.awsRegion });
+      cli.info(`AWS User Arn: ${identity.Arn}`);
+
       ecrCredentials = await ecrGetDockerCredentials({
         region: argv.awsRegion,
       });
@@ -171,7 +176,7 @@ export const command: yargs.CommandModule = {
       });
       previousImageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${previousImageTag}`;
       cli.info(`Using cache image: ${previousImageName}`);
-      await docker.imagePull(imageName);
+      await docker.imagePull(imageName, { verbose: true });
     }
 
     cli.banner("Build Step");
@@ -184,13 +189,16 @@ export const command: yargs.CommandModule = {
     } else {
       cli.info("Building docker image");
 
-      await docker.imageBuild({
-        imageName,
-        src: [argv.dockerFilePath],
-        buildargs: { RELEASE: argv.release },
-        context: argv.pwd,
-        previousImageName,
-      });
+      await docker.imageBuild(
+        {
+          imageName,
+          src: [argv.dockerFilePath],
+          buildargs: { RELEASE: argv.release },
+          context: argv.pwd,
+          previousImageName,
+        },
+        { verbose: true }
+      );
     }
 
     cli.banner("Push step");
@@ -204,11 +212,11 @@ export const command: yargs.CommandModule = {
       }
     }
 
-    await docker.imagePush(imageName);
+    await docker.imagePush(imageName, { verbose: true });
 
     cli.info(
-      `Done! Deploy the service with yarn ${chk.magenta(
-        `ecs-deploy-cli deploy --stage ${argv.stage}`
+      `Done! Deploy the service with  ${chk.magenta(
+        `yarn ecs-deploy-cli deploy --stage ${argv.stage}`
       )}`
     );
   },

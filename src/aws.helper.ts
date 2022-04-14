@@ -15,6 +15,7 @@ import {
 } from "@aws-sdk/client-ecr";
 import { fromIni } from "@aws-sdk/credential-provider-ini";
 import { fromEnv } from "@aws-sdk/credential-provider-env";
+import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
 
 import cli from "~cli.helper";
 
@@ -23,6 +24,14 @@ function getCredentials() {
     return fromIni();
   }
   return fromEnv();
+}
+
+export async function getAwsIdentity(options: { region: string }) {
+  const stsClient = new STSClient({
+    credentials: getCredentials(),
+    region: options.region,
+  });
+  return await stsClient.send(new GetCallerIdentityCommand({}));
 }
 
 function getEcrInstance(options: { region: string }) {

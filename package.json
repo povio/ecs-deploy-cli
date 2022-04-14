@@ -1,6 +1,6 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "0.11.3",
+  "version": "0.11.5",
   "packageManager": "yarn@3.2.0",
   "scripts": {
     "lint": "exlint --fix",
@@ -82,6 +82,7 @@
     }
   },
   "dependencies": {
+    "@aws-sdk/client-sts": "^3.67.0",
     "lodash": "^4.17.21",
     "lodash.snakecase": "^4.1.1"
   }
