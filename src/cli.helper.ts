@@ -2,8 +2,9 @@ import chalk from "chalk";
 import * as Console from "console";
 import Prompt from "prompt-sync";
 import process from "process";
-import { getGitVersion } from "./git.helper";
 import { diffJson } from "diff";
+
+import { getGitVersion } from "~git.helper";
 
 const { version } = require("../package.json");
 

@@ -1,11 +1,11 @@
 import "reflect-metadata";
-import { Options as YargsOptions } from "yargs";
+import { Options } from "yargs";
 import path from "path";
 
 import { loadConfig, Config } from "~config.helper";
 import cli from "~cli.helper";
 
-interface IOptionProperties extends YargsOptions {
+interface IOptionProperties extends Options {
   envAlias?: string;
 }
 
@@ -46,7 +46,7 @@ export function getOptions<T>(target: any): Record<keyof T, IOptionProperties> {
   return options;
 }
 
-export function getYargsOptions<T>(target: any): Record<keyof T, YargsOptions> {
+export function getYargsOptions<T>(target: any): Record<keyof T, Options> {
   return Object.entries(getOptions(target)).reduce((a, [property, options]) => {
     a[property] = Object.fromEntries(
       Object.entries(options).filter(
@@ -55,17 +55,17 @@ export function getYargsOptions<T>(target: any): Record<keyof T, YargsOptions> {
       )
     );
     return a;
-  }, {} as Record<keyof T, YargsOptions>);
+  }, {} as Record<keyof T, Options>);
 }
 
-export class Options {
+export class YargsOptions {
   stage: string;
   service?: string;
   pwd: string;
   config: Config;
 }
 
-export function loadYargsConfig<T extends Options>(
+export function loadYargsConfig<T extends YargsOptions>(
   cls: new () => T,
   _argv: Record<string, unknown>
 ): T {

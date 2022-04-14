@@ -5,24 +5,24 @@
 
 import yargs from "yargs";
 import path from "path";
-import cli, { chk } from "./cli.helper";
 
+import cli, { chk } from "~cli.helper";
 import { getGitChanges, getRelease } from "~git.helper";
 import {
   Option,
   getYargsOptions,
   loadYargsConfig,
   Config,
-  Options,
+  YargsOptions,
 } from "~yargs.helper";
 import {
   ecrGetDockerCredentials,
   ecrGetLatestImageTag,
   ecrImageExists,
 } from "~aws.helper";
-import docker from "./docker.helper";
+import docker from "~docker.helper";
 
-class EcrBuildOptions extends Options {
+class EcrBuildOptions extends YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
   pwd: string;
 

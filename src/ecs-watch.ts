@@ -8,12 +8,12 @@ import {
   getYargsOptions,
   loadYargsConfig,
   Option,
-  Options,
-} from "./yargs.helper";
-import cli, { chk } from "./cli.helper";
-import { ecsWatch } from "./aws.helper";
+  YargsOptions,
+} from "~yargs.helper";
+import cli, { chk } from "~cli.helper";
+import { ecsWatch } from "~aws.helper";
 
-class EcsWatchOptions extends Options {
+class EcsWatchOptions extends YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
   pwd: string;
 

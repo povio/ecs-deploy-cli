@@ -1,7 +1,8 @@
-import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import YAML from "yaml";
+
+import { parse as parseDotenv } from "dotenv";
+import { parse as parseYAML } from "yaml";
 
 interface ConfigItem {
   [key: string]: Config | string | number | string[];
@@ -198,8 +199,8 @@ export function loadEnvironmentIntoConfig(
  * @param path
  */
 export function readYaml(path: string): Record<string, any> {
-  return YAML.parse(fs.readFileSync(path, "utf8"), {
-    version: "1.1", //Supports merge keys
+  return parseYAML(fs.readFileSync(path, "utf8"), {
+    version: "1.1", // support merge keys
   });
 }
 
@@ -211,7 +212,7 @@ export function readYaml(path: string): Record<string, any> {
 export function readEnv(root: string, name: string): Record<string, string> {
   const envPath = path.join(root, name);
   if (envPath) {
-    return dotenv.parse(fs.readFileSync(envPath));
+    return parseDotenv(fs.readFileSync(envPath));
   } else {
     console.log(`Notice: env file ${envPath} not found`);
   }

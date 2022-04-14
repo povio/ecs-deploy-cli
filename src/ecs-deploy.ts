@@ -3,7 +3,7 @@
  */
 
 import yargs from "yargs";
-import semver from "semver";
+import { clean as semverClean, inc as semverInc } from "semver";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
 import { getRelease } from "~git.helper";
@@ -12,7 +12,7 @@ import {
   Option,
   getYargsOptions,
   loadYargsConfig,
-  Options,
+  YargsOptions,
 } from "~yargs.helper";
 import {
   ecrImageExists,
@@ -22,7 +22,7 @@ import {
   ecsWatch,
 } from "~aws.helper";
 
-class EcsDeployOptions extends Options {
+class EcsDeployOptions extends YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
   pwd: string;
 
@@ -160,14 +160,14 @@ export const command: yargs.CommandModule = {
       const previousVersion =
         taskDefinitionContainerEnvironment[`${globalPrefix}__version`];
       if (previousVersion) {
-        const cleanedVersion = semver.clean(
+        const cleanedVersion = semverClean(
           previousVersion.replace(/^([^0-9]+)/, "")
         );
         if (!cleanedVersion) {
           cli.warning("Version could not be parsed");
         } else {
           // make the version ${stage}-0.0.1
-          version = `${argv.stage}-${semver.inc(cleanedVersion, "patch")}`;
+          version = `${argv.stage}-${semverInc(cleanedVersion, "patch")}`;
           cli.info("Incrementing version");
         }
       } else {

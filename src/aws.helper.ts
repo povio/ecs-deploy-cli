@@ -16,7 +16,7 @@ import {
 import { fromIni } from "@aws-sdk/credential-provider-ini";
 import { fromEnv } from "@aws-sdk/credential-provider-env";
 
-import cli from "./cli.helper";
+import cli from "~cli.helper";
 
 function getCredentials() {
   if (process.env.AWS_PROFILE) {

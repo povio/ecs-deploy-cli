@@ -1,5 +1,5 @@
 import { dockerCommand } from "docker-cli-js";
-import cli from "./cli.helper";
+import cli from "~cli.helper";
 
 const options = {
   echo: true,
