@@ -189,12 +189,7 @@ export const command: yargs.CommandModule = {
     cli.notice(`Dockerfile path: ${dockerFilePath}`);
 
     // build image
-    if (!argv.buildx && (await docker.imageExists(imageName)).data) {
-      if (!argv.skipPush) {
-        cli.info("Reusing docker image and pushing to ECR...");
-        await docker.imagePush(imageName, { verbose: true });
-      }
-    } else {
+    if (argv.buildx || !(await docker.imageExists(imageName)).data) {
       cli.info("Building docker image");
 
       await docker.imageBuild(
@@ -206,13 +201,18 @@ export const command: yargs.CommandModule = {
           previousImageName,
           buildx: argv.buildx,
           platform: argv.platform,
-          push: !argv.skipPush,
+          push: argv.buildx && !argv.skipPush,
         },
         { verbose: true }
       );
     }
 
     if (!argv.skipPush) {
+      if (!argv.buildx) {
+        cli.info("Pushing to ECR...");
+        await docker.imagePush(imageName, { verbose: true });
+      }
+
       cli.info(
         `Done! Deploy the service with  ${chk.magenta(
           `yarn ecs-deploy-cli deploy --stage ${argv.stage}`
