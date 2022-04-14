@@ -109,32 +109,56 @@ export class Docker {
       previousImageName?: string;
       buildargs?: { [key: string]: string };
       noCache?: boolean;
+      buildx?: boolean;
+      platform?: string;
+      push: boolean;
     },
     options?: CommandOptions
   ) {
-    let command = `build --progress plain -t "${buildOptions.imageName}" `;
-
-    for (const s of buildOptions.src) {
-      command += `-f ${s} `;
+    if (buildOptions.buildx) {
+      await this.execute("buildx install");
+      await this.execute("buildx create --name ecs-build --use");
     }
 
-    for (const [k, v] of Object.entries(buildOptions.buildargs || {})) {
-      command += `--build-arg ${k}="${v}" `;
+    try {
+      let command = `${
+        buildOptions.buildx ? "buildx build" : "build"
+      }  --progress plain --platform ${buildOptions.platform} -t "${
+        buildOptions.imageName
+      }" `;
+
+      for (const s of buildOptions.src) {
+        command += `-f ${s} `;
+      }
+
+      for (const [k, v] of Object.entries(buildOptions.buildargs || {})) {
+        command += `--build-arg ${k}="${v}" `;
+      }
+
+      if (buildOptions.noCache) {
+        command += "--no-cache ";
+      }
+
+      if (buildOptions.previousImageName) {
+        command += `--cache-from ${buildOptions.previousImageName} "`;
+      }
+
+      command += buildOptions.context ?? process.cwd();
+
+      if (buildOptions.push) {
+        command += " --push";
+      }
+
+      return this.handleResponse(command, options, (response) => {
+        return undefined;
+      });
+    } catch (e) {
+      throw e;
+    } finally {
+      if (buildOptions.buildx) {
+        await this.execute("buildx rm ecs-build");
+      }
     }
-
-    if (buildOptions.noCache) {
-      command += "--no-cache ";
-    }
-
-    if (buildOptions.previousImageName) {
-      command += `--cache-from ${buildOptions.previousImageName} "`;
-    }
-
-    command += buildOptions.context ?? process.cwd();
-
-    return this.handleResponse(command, options, (response) => {
-      return undefined;
-    });
   }
 
   public async imagePush(imageName: string, options?: CommandOptions) {
