@@ -40,6 +40,23 @@ jobs:
             VERSION=$CIRCLE_TAG
             yarn ecs-deploy-cli deploy
 
+      - run:
+          name: Slack message on success
+          command: >-
+            RELEASE=$CIRCLE_SHA1
+            STAGE=$STAGE
+            VERSION=$CIRCLE_TAG
+            yarn ecs-deploy-cli slack --messageType success
+
+      - run:
+          name: Slack message on fail
+          command: >-
+            RELEASE=$CIRCLE_SHA1
+            STAGE=$STAGE
+            VERSION=$CIRCLE_TAG
+            yarn ecs-deploy-cli slack --messageType failure
+          when: on_fail
+
   ecs-deploy-myapp-dev:
     <<: *ecs-deploy
     environment:
