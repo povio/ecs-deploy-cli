@@ -193,7 +193,7 @@ export const command: yargs.CommandModule = {
     }
 
     const dockerfileContext = path.resolve(argv.dockerfileContext || argv.pwd);
-    const dockerfilePath = argv.dockerfilePath;
+    const dockerfilePath = path.join(dockerfileContext, argv.dockerfilePath);
     if (argv.dockerfileContext || argv.dockerfilePath !== "Dockerfile") {
       cli.notice(`Dockerfile context: ${dockerfileContext}`);
       cli.notice(`Dockerfile path: ${dockerfilePath}`);
