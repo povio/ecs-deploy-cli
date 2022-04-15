@@ -136,9 +136,9 @@ export const command: yargs.CommandModule = {
     }
 
     if (slackCommitPrefix) {
-      message += `\t :memo: <${slackCommitPrefix}${gitSha}|${gitShortSha}>\t`;
+      message += `\n\t\t :memo: <${slackCommitPrefix}${gitSha}|${gitShortSha}>\t`;
     } else {
-      message += `\t :memo: ${gitShortSha}\t`;
+      message += `\n\t\t :memo: ${gitShortSha}\t`;
     }
 
     if (slackAutolinkTarget && slackAutolinkPrefix) {
