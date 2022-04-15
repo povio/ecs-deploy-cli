@@ -123,7 +123,8 @@ export class Docker {
     try {
       let command = buildOptions.buildx ? "buildx build " : "build ";
 
-      command += `--progress plain -t "${buildOptions.imageName} `;
+      command += `--progress plain `;
+      command += `-t "${buildOptions.imageName}" `;
 
       if (buildOptions.platform) {
         command += `--platform ${buildOptions.platform} `;
