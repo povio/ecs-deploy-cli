@@ -192,11 +192,11 @@ export const command: yargs.CommandModule = {
       await docker.imagePull(imageName, { verbose: true });
     }
 
-    const dockerfileContext = argv.dockerfileContext || argv.pwd;
+    const dockerfileContext = path.resolve(argv.dockerfileContext || argv.pwd);
     const dockerfilePath = argv.dockerfilePath;
     if (argv.dockerfileContext || argv.dockerfilePath !== "Dockerfile") {
       cli.notice(`Dockerfile context: ${dockerfileContext}`);
-      cli.notice(`Dockerfile path: ${dockerfileContext}`);
+      cli.notice(`Dockerfile path: ${dockerfilePath}`);
     }
 
     // next.js needs to have per stage build time variables

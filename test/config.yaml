@@ -2,14 +2,16 @@ stages:
   test: &test
     env_files: ['secrets.env']
     ecs_deploy:
-      # relative to PWD
-      DOCKER_PATH: ./Dockerfile
+
 
       slackChannel: C03AXDS9F2B
       slackAutolinkPrefix: SP-
       slackAutolinkTarget: https://github.com/poviolabs/ecs-deploy-cli/issues/
       slackCommitPrefix: https://github.com/poviolabs/ecs-deploy-cli/commit/
       slackProjectName: ECS-Deploy
+
+      dockerfileContext: ./test
+      dockerfilePath: Dockerfile
 
     ecs_env:
       app__test_fixed_env: 'test1'
