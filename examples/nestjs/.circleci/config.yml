@@ -15,7 +15,8 @@ jobs:
       - checkout
 
       - setup_remote_docker
-        # only usable on the CircleCI Performance plan
+        version: 20.10.11
+        ## only usable on the CircleCI Performance plan
         # docker_layer_caching: true
 
       - node/install-packages:
