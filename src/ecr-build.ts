@@ -72,7 +72,10 @@ class EcrBuildOptions extends YargsOptions {
   @Option({ envAlias: "DOCKERFILE_CONTEXT" })
   dockerfileContext: string;
 
-  @Option({ default: "linux/amd64" })
+  @Option({
+    // requires Docker daemon API  version 1.38
+    // default: "linux/amd64"
+  })
   platform: string;
 
   @Option({ default: false })

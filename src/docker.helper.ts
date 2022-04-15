@@ -121,11 +121,13 @@ export class Docker {
     }
 
     try {
-      let command = `${
-        buildOptions.buildx ? "buildx build" : "build"
-      }  --progress plain --platform ${buildOptions.platform} -t "${
-        buildOptions.imageName
-      }" `;
+      let command = buildOptions.buildx ? "buildx build " : "build ";
+
+      command += `--progress plain -t "${buildOptions.imageName} `;
+
+      if (buildOptions.platform) {
+        command += `--platform ${buildOptions.platform} `;
+      }
 
       for (const s of buildOptions.src) {
         command += `-f ${s} `;
