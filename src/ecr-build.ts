@@ -192,8 +192,12 @@ export const command: yargs.CommandModule = {
       await docker.imagePull(imageName, { verbose: true });
     }
 
-    const dockerfilePath = path.join(argv.pwd, argv.dockerfilePath);
-    cli.notice(`Dockerfile path: ${dockerfilePath}`);
+    const dockerfileContext = argv.dockerfileContext || argv.pwd;
+    const dockerfilePath = argv.dockerfilePath;
+    if (argv.dockerfileContext || argv.dockerfilePath !== "Dockerfile") {
+      cli.notice(`Dockerfile context: ${dockerfileContext}`);
+      cli.notice(`Dockerfile path: ${dockerfileContext}`);
+    }
 
     // next.js needs to have per stage build time variables
     //  check that we are not reusing the image in multiple stages
@@ -212,12 +216,12 @@ export const command: yargs.CommandModule = {
       await docker.imageBuild(
         {
           imageName,
-          src: [argv.dockerfilePath],
+          src: [dockerfilePath],
           buildargs: {
             RELEASE: argv.release,
             ...(argv.config.ecs_docker_env ? argv.config.ecs_docker_env : {}),
           },
-          context: argv.dockerfileContext || argv.pwd,
+          context: dockerfileContext,
           previousImageName,
           buildx: argv.buildx,
           platform: argv.platform,
