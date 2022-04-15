@@ -49,6 +49,11 @@ stages:
     ecs_secrets:
       TYPEORM_PASSWORD: 'arn:aws:secretsmanager:eu-central-1:000000000000:....'
       app__auth__secret: 'arn:aws:ssm:eu-central-1:000000000000:/myapp-dev/secret'
+    
+    ## Inject variable into docker build
+    ##  This can be used for next.js along with `--releaseStrategy gitsha-stage`
+    # ecs_docker_env:
+    #  app_module_key: "value"
 
     ## optionally, have a dot-env locally
     ##  remember to gitignore!
@@ -98,7 +103,7 @@ If the ECS task got corrupted, you can use this flag to deploy a new one based o
 
 #### --skipPush
 
-Only build the image. Usefull for testing.
+Only build the image. Useful for testing.
 
 #### --platform
 

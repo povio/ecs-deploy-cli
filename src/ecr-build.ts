@@ -41,7 +41,11 @@ class EcrBuildOptions extends YargsOptions {
   })
   releaseStrategy: "gitsha" | "gitsha-stage";
 
-  @Option({ envAlias: "AWS_REPO_NAME", demandOption: true })
+  @Option({
+    envAlias: "AWS_REPO_NAME",
+    demandOption: true,
+    alias: ["awsRepoName"],
+  })
   ecrRepoName: string;
 
   @Option({ describe: "Pull image from ECR to use as a base" })
@@ -63,7 +67,10 @@ class EcrBuildOptions extends YargsOptions {
   skipEcrExistsCheck: boolean;
 
   @Option({ envAlias: "DOCKERFILE_PATH", default: "Dockerfile" })
-  dockerFilePath: string;
+  dockerfilePath: string;
+
+  @Option({ envAlias: "DOCKERFILE_CONTEXT" })
+  dockerfileContext: string;
 
   @Option({ default: "linux/amd64" })
   platform: string;
@@ -185,8 +192,18 @@ export const command: yargs.CommandModule = {
       await docker.imagePull(imageName, { verbose: true });
     }
 
-    const dockerFilePath = path.join(argv.pwd, argv.dockerFilePath);
-    cli.notice(`Dockerfile path: ${dockerFilePath}`);
+    const dockerfilePath = path.join(argv.pwd, argv.dockerfilePath);
+    cli.notice(`Dockerfile path: ${dockerfilePath}`);
+
+    // next.js needs to have per stage build time variables
+    //  check that we are not reusing the image in multiple stages
+    if (argv.config.ecs_docker_env) {
+      if (argv.releaseStrategy === "gitsha") {
+        throw new Error(
+          "Docker environment injection can not be used with releaseStrategy=gitsha"
+        );
+      }
+    }
 
     // build image
     if (argv.buildx || !(await docker.imageExists(imageName)).data) {
@@ -195,9 +212,12 @@ export const command: yargs.CommandModule = {
       await docker.imageBuild(
         {
           imageName,
-          src: [argv.dockerFilePath],
-          buildargs: { RELEASE: argv.release },
-          context: argv.pwd,
+          src: [argv.dockerfilePath],
+          buildargs: {
+            RELEASE: argv.release,
+            ...(argv.config.ecs_docker_env ? argv.config.ecs_docker_env : {}),
+          },
+          context: argv.dockerfileContext || argv.pwd,
           previousImageName,
           buildx: argv.buildx,
           platform: argv.platform,
