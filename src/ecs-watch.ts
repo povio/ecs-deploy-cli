@@ -43,7 +43,11 @@ export const command: yargs.CommandModule = {
     return y
       .options(getYargsOptions(EcsWatchOptions))
       .middleware(async (_argv) => {
-        return loadYargsConfig(EcsWatchOptions, _argv as any) as any;
+        return loadYargsConfig(
+          EcsWatchOptions,
+          _argv as any,
+          "ecs_deploy"
+        ) as any;
       }, true);
   },
   handler: async (_argv) => {

@@ -67,7 +67,8 @@ export class YargsOptions {
 
 export function loadYargsConfig<T extends YargsOptions>(
   cls: new () => T,
-  _argv: Record<string, unknown>
+  _argv: Record<string, unknown>,
+  configDefaultBase?: string
 ): T {
   const argv: T = new cls();
 
@@ -97,7 +98,9 @@ export function loadYargsConfig<T extends YargsOptions>(
       // yargs is always right
       _argv[name] ||
       // default to config if set
-      config.ecs_deploy[name] ||
+      (configDefaultBase &&
+        config[configDefaultBase] &&
+        config[configDefaultBase][name]) ||
       // fallback to env
       process.env[o.envAlias];
 

@@ -88,7 +88,11 @@ export const command: yargs.CommandModule = {
     return y
       .options(getYargsOptions(EcsDeployOptions))
       .middleware(async (_argv) => {
-        const argv = loadYargsConfig(EcsDeployOptions, _argv as any);
+        const argv = loadYargsConfig(
+          EcsDeployOptions,
+          _argv as any,
+          "ecs_deploy"
+        );
         argv.release =
           argv.release || (await getRelease(argv.pwd, argv.releaseStrategy));
 
