@@ -21,6 +21,7 @@ import {
   ecsUpdateService,
   ecsWatch,
 } from "~aws.helper";
+import { printDiff } from "~diff.helper";
 
 class EcsDeployOptions extends YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -255,7 +256,7 @@ export const command: yargs.CommandModule = {
     };
 
     cli.banner("Container Definition Diff");
-    cli.printDiff(
+    printDiff(
       previousContainerDefinition,
       taskDefinitionRequest.containerDefinitions[0]
     );
@@ -277,7 +278,7 @@ export const command: yargs.CommandModule = {
     });
 
     cli.banner("Task Definition Diff");
-    cli.printDiff(taskDefinition, previousTaskDefinition);
+    printDiff(taskDefinition, previousTaskDefinition);
 
     cli.info(`Updating service task to revision ${taskDefinition.revision}...`);
 

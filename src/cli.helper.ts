@@ -2,7 +2,6 @@ import chalk from "chalk";
 import * as Console from "console";
 import Prompt from "prompt-sync";
 import process from "process";
-import { diffJson } from "diff";
 
 import { getGitVersion } from "~git.helper";
 
@@ -109,32 +108,6 @@ export async function printEnvironment(argv: { pwd: string; stage?: string }) {
   }
 }
 
-export function printDiff(one: object, two: object) {
-  const line = 0;
-  for (const { value, added, removed } of diffJson(one, two)) {
-    if (added) {
-      console.log(chk.yellow(value.replace(/\n$/, "")));
-    } else if (removed) {
-      console.log(chk.green(value.replace(/\n$/, "")));
-    } else {
-      const text = value.replace(/\n$/, "").split("\n");
-      if (text.length < 6) {
-        console.log(value.replace(/\n$/, ""));
-      } else {
-        console.log(
-          [
-            text[0],
-            text[1],
-            "...",
-            text[text.length - 2],
-            text[text.length - 1],
-          ].join("\n")
-        );
-      }
-    }
-  }
-}
-
 export default {
   printEnvironment,
   confirm,
@@ -146,6 +119,5 @@ export default {
   banner,
   info,
   verbose,
-  printDiff,
   success,
 };
