@@ -1,6 +1,6 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "0.11.15",
+  "version": "0.11.16",
   "packageManager": "yarn@3.2.0",
   "scripts": {
     "lint": "exlint --fix",
@@ -29,6 +29,7 @@
   "devDependencies": {
     "@aws-sdk/client-ecr": "^3.67.0",
     "@aws-sdk/client-ecs": "^3.67.0",
+    "@aws-sdk/client-sts": "^3.67.0",
     "@aws-sdk/credential-provider-env": "^3.55.0",
     "@aws-sdk/credential-provider-ini": "^3.67.0",
     "@aws-sdk/node-config-provider": "^3.58.0",
@@ -80,10 +81,5 @@
     "transform": {
       "^.+\\.(t|j)sx?$": "@swc/jest"
     }
-  },
-  "dependencies": {
-    "@aws-sdk/client-sts": "^3.67.0",
-    "lodash": "^4.17.21",
-    "lodash.snakecase": "^4.1.1"
   }
 }
