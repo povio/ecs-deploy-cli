@@ -77,7 +77,7 @@ export function loadYargsConfig<T extends YargsOptions>(
   if (!argv.pwd) throw new Error("No PWD given");
   argv.stage =
     (_argv.stage as string) ||
-    process.env[`${process.env.CONFIG_PREFIX}__version`] ||
+    process.env[`${process.env.CONFIG_PREFIX}__stage`] ||
     process.env.STAGE;
   if (!argv.stage) throw new Error("No Stage defined");
 
