@@ -1,6 +1,6 @@
 import path from "path";
 
-import { Docker } from "../../src/docker.helper";
+import { Docker } from "../../src/helpers/docker.helper";
 
 describe("docker", () => {
   test("it should make the correct docker commands", async () => {
@@ -21,7 +21,7 @@ describe("docker", () => {
           }),
         })
       ).data
-    ).toEqual("Client: 1.1.1");
+    ).toEqual("Client 1.1.1 Server 1.2.1");
 
     expect(
       (

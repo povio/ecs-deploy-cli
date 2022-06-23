@@ -1,11 +1,18 @@
 stages:
   test: &test
-    envFiles: ['secrets.env']
+    # envFiles: ['secrets.env']
 
     ecsDeploy:
 
       dockerfileContext: ./test
       dockerfilePath: Dockerfile
+
+      # awsAccountId:
+      # awsRegion: eu-central-1
+      # ecsTaskFamily:
+      # ecsServiceName:
+      # ecsClusterName:
+      # ecrRepoName:
 
     ecsEnv:
       app__test_fixed_env: 'test1'

@@ -7,7 +7,8 @@ Features:
 - Environment and SSM credentias storage conventions
 - CircleCi pipeline example
 - Cross-platform (made with TypeScript/Javascript, external requirements: `git`, `docker`)
-- Uses the config.yaml structure
+- Uses the [node-stage](https://github.com/poviolabs/node-stage]) tool for configuration.
+
 
 Examples:
 
@@ -16,10 +17,10 @@ Examples:
 # Usage
 
 ```bash
-yarn add ecs-deploy-cli@poviolabs/ecs-deploy-cli
+yarn add ecs-deploy-cli@poviolabs/ecs-deploy-cli#v2
 
 # upgrade
-yarn up ecs-deploy-cli@poviolabs/ecs-deploy-cli
+yarn up ecs-deploy-cli@poviolabs/ecs-deploy-cli#v2
 ```
 
 ## Configure
@@ -30,34 +31,34 @@ yarn up ecs-deploy-cli@poviolabs/ecs-deploy-cli
 stages:
   myapp-dev:
 
-    ecs_deploy:
+    ecsDeploy:
 
-      AWS_REPO_NAME: myapp
-      ECS_TASK_FAMILY: myapp-dev-backend
-      ECS_SERVICE_NAME: myapp-dev-backend
-      ECS_CLUSTER_NAME: myapp-dev
+      ecrRepoName: myapp
+      ecsTaskFamily: myapp-dev-backend
+      ecsServiceName: myapp-dev-backend
+      ecsClusterName: myapp-dev
 
       ## relative to PWD
-      # DOCKER_PATH: ./Dockerfile
+      # dockerfilePath: ./Dockerfile
 
-    ecs_env:
+    ecsEnv:
       ## variables can be injected directly into ECS
       ##  but one should stick with this file by default
       ##  to avoid the ECS task environment size limit
       # TYPEORM_DATABASE: myapp
 
-    ecs_secrets:
+    ecsSecrets:
       TYPEORM_PASSWORD: 'arn:aws:secretsmanager:eu-central-1:000000000000:....'
       app__auth__secret: 'arn:aws:ssm:eu-central-1:000000000000:/myapp-dev/secret'
     
     ## Inject variable into docker build
     ##  This can be used for next.js along with `--releaseStrategy gitsha-stage`
-    # ecs_docker_env:
+    # ecsDockerEnv:
     #  app_module_key: "value"
 
     ## optionally, have a dot-env locally
     ##  remember to gitignore!
-    # env_files: [ '.env.myapp-dev.secrets' ]
+    # envFiles: [ '.env.myapp-dev.secrets' ]
     ## or use config.local.yaml
 ```
 
@@ -79,11 +80,6 @@ yarn ecs-deploy-cli slack --messageType success
 ## Run Options
 
 Descriptions for useful flags. Use `--help` for a comprehensive list.
-
-#### --releaseStrategy 
-
- - `gitsha` - make the same build for all stages
- - `gitsha-stage` - make a build based on the stage and git sha in cases where the build is different per stage
 
 #### --ecrCache
 
@@ -113,6 +109,8 @@ Set the platform explicitly, defaults to "linux/amd64"
 
 Use [docker buildx](https://docs.docker.com/buildx/working-with-buildx/) to build on ARM / Apple M1.
 
+> More options can be found [here](https://github.com/poviolabs/node-stage#options).
+
 ## Development
 
 ### Test locally
@@ -121,7 +119,7 @@ Set up `./test/secrets.env` with credentials to do a E2E test.
 
 ```bash
 # test with ts-node
-yarn test:ts-node --help
+yarn test:ts-node:cli --help
 
 # build new version
 yarn build

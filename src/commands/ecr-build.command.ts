@@ -13,7 +13,6 @@ import {
   YargsOptions,
   loadYargsConfig,
   ReleaseStrategy,
-  getVersion,
   logBanner,
   getToolEnvironment,
   logVariable,
@@ -24,6 +23,8 @@ import {
   logNotice,
   chk,
 } from "node-stage";
+
+import { getVersion } from "../helpers/version.helper";
 
 import {
   ecrGetDockerCredentials,
@@ -117,7 +118,7 @@ export const command: yargs.CommandModule = {
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcrBuildOptions;
 
-    logBanner(`EcsBuild ${getVersion()}`);
+    logBanner(`EcsDeploy ${getVersion()}`);
 
     for (const [k, v] of Object.entries(await getToolEnvironment(argv))) {
       logVariable(k, v);
@@ -155,7 +156,7 @@ export const command: yargs.CommandModule = {
         }, {} as Record<string, string>),
     });
 
-    logVariable("RELEASE", argv.release);
+    logVariable("release", argv.release);
 
     logInfo(`Docker Version: ${(await docker.version()).data}`);
 
@@ -218,7 +219,7 @@ export const command: yargs.CommandModule = {
 
     // next.js needs to have per stage build time variables
     //  check that we are not reusing the image in multiple stages
-    if (argv.config.ecs_docker_env) {
+    if (argv.config.ecsDockerEnv) {
       if (argv.releaseStrategy === "gitsha") {
         throw new Error(
           "Docker environment injection can not be used with releaseStrategy=gitsha"
@@ -236,7 +237,7 @@ export const command: yargs.CommandModule = {
           src: [dockerfilePath],
           buildargs: {
             RELEASE: argv.release,
-            ...(argv.config.ecs_docker_env ? argv.config.ecs_docker_env : {}),
+            ...(argv.config.ecsDockerEnv ? argv.config.ecsDockerEnv : {}),
           },
           context: dockerfileContext,
           previousImageName,

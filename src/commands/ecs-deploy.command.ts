@@ -13,7 +13,6 @@ import {
   YargsOptions,
   loadYargsConfig,
   ReleaseStrategy,
-  getVersion,
   logBanner,
   getToolEnvironment,
   logVariable,
@@ -33,6 +32,7 @@ import {
   ecsWatch,
 } from "../helpers/aws.helper";
 import { printDiff } from "../helpers/diff.helper";
+import { getVersion } from "../helpers/version.helper";
 
 class EcsDeployOptions implements YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -119,10 +119,10 @@ export const command: yargs.CommandModule = {
 
     logBanner("Deploy Environment");
 
-    logVariable("AWS_REPO_NAME", argv.ecrRepoName);
-    logVariable("ECS_TASK_FAMILY", argv.ecsTaskFamily);
-    logVariable("ECS_CLUSTER_NAME", argv.ecsClusterName);
-    logVariable("ECS_SERVICE_NAME", argv.ecsServiceName);
+    logVariable("ecrRepoName", argv.ecrRepoName);
+    logVariable("ecsTaskFamily", argv.ecsTaskFamily);
+    logVariable("ecsClusterName", argv.ecsClusterName);
+    logVariable("ecsServiceName", argv.ecsServiceName);
 
     // load ECR details
     const imageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${argv.release}`;
@@ -167,7 +167,7 @@ export const command: yargs.CommandModule = {
     const globalPrefix = process.env.CONFIG_PREFIX || "app";
 
     if (!previousContainerDefinition.environment) {
-      throw new Error("Task definition missing enviorment");
+      throw new Error("Task definition missing environment");
     }
 
     //  get previous environment
@@ -203,9 +203,9 @@ export const command: yargs.CommandModule = {
     }
 
     // override task container env from config.yaml
-    if (argv.config.ecs_env && typeof argv.config.ecs_env === "object") {
+    if (argv.config.ecsEnv && typeof argv.config.ecsEnv === "object") {
       for (const [envKey, envValue] of Object.entries(
-        argv.config.ecs_env as Record<string, string>
+        argv.config.ecsEnv as Record<string, string>
       )) {
         taskDefinitionContainerEnvironment[envKey] = envValue;
       }
@@ -243,12 +243,9 @@ export const command: yargs.CommandModule = {
         : {};
 
     // override task container secrets from config.yaml
-    if (
-      argv.config.ecs_secrets &&
-      typeof argv.config.ecs_secrets === "object"
-    ) {
+    if (argv.config.ecsSecrets && typeof argv.config.ecSecrets === "object") {
       for (const [secretKey, secretFrom] of Object.entries(
-        argv.config.ecs_secrets as Record<string, string>
+        argv.config.ecsSecrets as Record<string, string>
       )) {
         taskDefinitionContainerSecrets[secretKey] = secretFrom;
       }

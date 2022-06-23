@@ -2,17 +2,19 @@
 stages:
   myapp-dev:
 
-    envFiles: [ '.env.myapp-dev.secrets' ]
+    # For local development you can use config.local.yaml or envFiles
+    #  do not forget to gitignore these files!
+    # envFiles: [ '.env.myapp-dev.secrets' ]
 
     ecsDeploy:
 
-      AWS_REPO_NAME: myapp
-      ECS_TASK_FAMILY: myapp-dev-backend
-      ECS_SERVICE_NAME: myapp-dev-backend
-      ECS_CLUSTER_NAME: myapp-dev
+      ecrRepoName: myapp
+      ecsTaskFamily: myapp-dev-backend
+      ecsServiceName: myapp-dev-backend
+      ecsClusterName: myapp-dev
 
       # relative to PWD
-      # DOCKER_PATH: ./Dockerfile
+      # dockerfilePath: ./Dockerfile
 
     ecsEnv:
       # variables can be injected directly into ECS
