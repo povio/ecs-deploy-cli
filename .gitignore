@@ -13,8 +13,7 @@ node_modules
 # IDEs and editors
 .idea
 .DS_Store
-/test/data
-src/*.js
 
-test/secrets.env
-/dist/stats.json
+# config
+config.local.yaml
+secrets.env

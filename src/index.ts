@@ -3,10 +3,9 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
-import { command as buildCommand } from "~ecr-build";
-import { command as deployCommand } from "~ecs-deploy";
-import { command as watchCommand } from "~ecs-watch";
-import { command as slackCommand } from "~slack";
+import { command as buildCommand } from "./ecr-build.command";
+import { command as deployCommand } from "./ecs-deploy.command";
+import { command as watchCommand } from "./ecs-watch.command";
 import * as cli from "~cli.helper";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -18,7 +17,6 @@ yargs(hideBin(process.argv))
   .command(buildCommand)
   .command(deployCommand)
   .command(watchCommand)
-  .command(slackCommand)
   .help()
   .demandCommand(1)
   .strictCommands(true)

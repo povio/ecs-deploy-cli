@@ -2,9 +2,9 @@
 stages:
   myapp-dev:
 
-    env_files: [ '.env.myapp-dev.secrets' ]
+    envFiles: [ '.env.myapp-dev.secrets' ]
 
-    ecs_deploy:
+    ecsDeploy:
 
       AWS_REPO_NAME: myapp
       ECS_TASK_FAMILY: myapp-dev-backend
@@ -14,12 +14,12 @@ stages:
       # relative to PWD
       # DOCKER_PATH: ./Dockerfile
 
-    ecs_env:
+    ecsEnv:
       # variables can be injected directly into ECS
       #  but one should stick with this file by default
       #  to avoid the ECS task environment size limit
       # TYPEORM_DATABASE: myapp
 
-    ecs_secrets:
+    ecsSecrets:
       TYPEORM_PASSWORD: 'arn:aws:secretsmanager:eu-central-1:000000000000:....'
       app__auth__secret: 'arn:aws:ssm:eu-central-1:000000000000:/myapp-dev/secret'

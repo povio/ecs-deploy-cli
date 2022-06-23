@@ -1,6 +1,0 @@
-stages:
-  test: &test
-    yaml_local_override: correct
-
-  test-worker:
-    <<: *test

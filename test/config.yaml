@@ -1,21 +1,16 @@
 stages:
   test: &test
-    env_files: ['secrets.env']
-    ecs_deploy:
+    envFiles: ['secrets.env']
 
-
-      slackChannel: C03AXDS9F2B
-      slackAutolinkPrefix: SP-
-      slackAutolinkTarget: https://github.com/poviolabs/ecs-deploy-cli/issues/
-      slackCommitPrefix: https://github.com/poviolabs/ecs-deploy-cli/commit/
-      slackProjectName: ECS-Deploy
+    ecsDeploy:
 
       dockerfileContext: ./test
       dockerfilePath: Dockerfile
 
-    ecs_env:
+    ecsEnv:
       app__test_fixed_env: 'test1'
-    ecs_secrets:
+
+    ecsSecrets:
       app__test_secret: 'arn::::'
 
   test-api:

@@ -113,46 +113,6 @@ Set the platform explicitly, defaults to "linux/amd64"
 
 Use [docker buildx](https://docs.docker.com/buildx/working-with-buildx/) to build on ARM / Apple M1.
 
-#### --service
-
-If the stage has multiple services, you can define the one you want to deploy here.
-
-Example configuration
-
-```yaml
-stages:
-  myapp-prd: &myapp-prd
-    yaml_local_override: correct
-
-  myapp-prd-worker:
-    <<: *myapp-prd
-    stage: myapp-prd
-```
-
-#### Overriding config and global prefix
-
-CONFIG_PREFIX=app
-CONFIG_FILE=config.yaml
-
-#### Slack message config
-
-```yaml
-stages:
-  myapp-prd:
-    ecs_deploy:
-      slackChannel: C03AXDS9F2B
-      slackAutolinkPrefix: SP-
-      slackAutolinkTarget: https://github.com/poviolabs/ecs-deploy-cli/issues/
-      slackCommitPrefix: https://github.com/poviolabs/ecs-deploy-cli/commit/
-      slackProjectName: ECS-Deploy
-```
-
-```bash
-yarn ecs-deploy-cli slack --messageType success
-yarn ecs-deploy-cli slack --messageType failure
-yarn ecs-deploy-cli slack --messageType info --message A custom message!
-```
-
 ## Development
 
 ### Test locally
