@@ -9,8 +9,8 @@
     "clean": "node tools/cleanup",
     "test": "jest --no-cache --runInBand",
     "test:cov": "jest --coverage --no-cache --runInBand",
-    "test:cli": "./dist/index.js --pwd ./test --stage test",
-    "test:ts-node:cli": "ts-node -r tsconfig-paths/register ./src/index.ts --pwd ./test --stage test",
+    "test:cli": "./dist/sh.js --pwd ./test --stage test",
+    "test:ts-node:cli": "ts-node -r tsconfig-paths/register ./src/sh.ts --pwd ./test --stage test",
     "lint": "eslint --fix"
   },
   "files": [
@@ -40,6 +40,8 @@
     "@aws-sdk/credential-provider-ini": "^3.112.0",
     "@aws-sdk/node-config-provider": "^3.110.0",
     "diff": "^5.1.0",
+    "node-stage": "poviolabs/node-stage#v1",
+    "semver": "^7.3.7",
     "yargs": "^17.5.1"
   },
   "devDependencies": {
@@ -52,6 +54,7 @@
     "@types/jest": "^28.1.3",
     "@types/node": "^16.11.41",
     "@types/prettier": "^2.6.3",
+    "@types/semver": "^7.3.10",
     "@types/yargs": "^17.0.10",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
     "@typescript-eslint/parser": "^5.29.0",

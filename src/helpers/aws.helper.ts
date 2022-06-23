@@ -12,12 +12,14 @@ import {
   ECRClient,
   DescribeImagesCommand,
   GetAuthorizationTokenCommand,
+  ImageIdentifier,
+  ImageDetail,
 } from "@aws-sdk/client-ecr";
 import { fromIni } from "@aws-sdk/credential-provider-ini";
 import { fromEnv } from "@aws-sdk/credential-provider-env";
 import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
 
-import cli from "~cli.helper";
+import { logVerbose } from "node-stage";
 
 function getCredentials() {
   if (process.env.AWS_PROFILE) {
@@ -44,7 +46,7 @@ function getEcrInstance(options: { region: string }) {
 export async function ecrImageExists(options: {
   region: string;
   repositoryName: string;
-  imageIds;
+  imageIds: ImageIdentifier[];
 }) {
   const ecr = getEcrInstance({ region: options.region });
   try {
@@ -56,10 +58,10 @@ export async function ecrImageExists(options: {
     );
 
     if (process.env.VERBOSE) {
-      cli.verbose(JSON.stringify(images.imageDetails));
+      logVerbose(JSON.stringify(images.imageDetails));
     }
-  } catch (e) {
-    if (e.name === "ImageNotFoundException") {
+  } catch (e: any) {
+    if (e?.name === "ImageNotFoundException") {
       return false;
     }
     throw e;
@@ -79,12 +81,13 @@ export async function ecrGetLatestImageTag(options: {
           repositoryName: options.repositoryName,
         })
       )
-    ).imageDetails;
+    ).imageDetails as ImageDetail[];
     images.sort((a, b) => {
-      return b.imagePushedAt < a.imagePushedAt ? -1 : 1;
+      if (!b.imagePushedAt || !a.imagePushedAt) return 0;
+      return (b.imagePushedAt || 0) < (a.imagePushedAt || 0) ? -1 : 1;
     });
-    return images[0].imageTags[0];
-  } catch (e) {
+    return images[0].imageTags?.[0];
+  } catch (e: any) {
     if (e.name === "ImageNotFoundException") {
       return false;
     }
@@ -95,12 +98,14 @@ export async function ecrGetLatestImageTag(options: {
 export async function ecrGetDockerCredentials(options: { region: string }) {
   const ecr = getEcrInstance({ region: options.region });
   const auth = await ecr.send(new GetAuthorizationTokenCommand({}));
+  const authorizationToken = auth?.authorizationData?.[0].authorizationToken;
+  const proxyEndpoint = auth?.authorizationData?.[0].proxyEndpoint;
+  if (!authorizationToken || proxyEndpoint) {
+    throw new Error("Could not get auth token or proxy");
+  }
   let password;
   try {
-    password = Buffer.from(
-      auth.authorizationData[0].authorizationToken,
-      "base64"
-    )
+    password = Buffer.from(authorizationToken, "base64")
       .toString("ascii")
       .split(":")[1];
   } catch (e) {
@@ -109,7 +114,7 @@ export async function ecrGetDockerCredentials(options: { region: string }) {
   return {
     password,
     username: "AWS",
-    endpoint: auth.authorizationData[0].proxyEndpoint,
+    endpoint: proxyEndpoint,
   };
 }
 
@@ -133,7 +138,7 @@ export async function ecsGetCurrentTaskDefinition(options: {
     )
   ).taskDefinition;
   if (process.env.VERBOSE) {
-    cli.verbose(JSON.stringify(taskDefinition));
+    logVerbose(JSON.stringify(taskDefinition));
   }
   return taskDefinition;
 }
@@ -149,7 +154,7 @@ export async function ecsRegisterTaskDefinition(options: {
     )
   ).taskDefinition;
   if (process.env.VERBOSE) {
-    cli.verbose(JSON.stringify(taskDefinition));
+    logVerbose(JSON.stringify(taskDefinition));
   }
   return taskDefinition;
 }
@@ -171,7 +176,7 @@ export async function ecsUpdateService(options: {
     )
   ).service;
   if (process.env.VERBOSE) {
-    cli.verbose(JSON.stringify(service));
+    logVerbose(JSON.stringify(service));
   }
   return service;
 }
@@ -203,13 +208,16 @@ export function ecsWatch(
 ): { stop: () => void; promise: Promise<void> } {
   const ecs = getECSInstance({ region: options.region });
   const showOlder = options.showOlder === undefined ? 5 : options.showOlder;
-  let lastEventDate: Date;
+  let lastEventDate: Date | undefined = undefined;
 
   // todo, events might be lost here, make a lastEventDate per source
 
+  let resolve: () => void;
+  let reject: (e: any) => void;
+
   const getService = async () => {
     try {
-      let passLastEventDate: Date;
+      let passLastEventDate: Date | undefined = undefined;
       const services = await ecs.send(
         new DescribeServicesCommand({
           services: [options.service],
@@ -217,43 +225,61 @@ export function ecsWatch(
         })
       );
 
+      if (!services.services) {
+        throw new Error("Expected services but got none");
+      }
+
       callback({ type: "services", services: services.services });
 
       services.services.forEach((s) => {
-        s.deployments.forEach((d) => {
-          if (d.updatedAt > lastEventDate) {
-            callback({ type: "deployment", deployment: d });
-            if (!passLastEventDate || passLastEventDate < d.updatedAt) {
-              passLastEventDate = d.updatedAt;
+        if (s.deployments) {
+          s.deployments.forEach((d) => {
+            if ((d.updatedAt || 0) > (lastEventDate || 0)) {
+              callback({ type: "deployment", deployment: d });
+              if (
+                d.updatedAt &&
+                (!passLastEventDate || passLastEventDate < d.updatedAt)
+              ) {
+                passLastEventDate = d.updatedAt;
+              }
             }
-          }
-        });
-        if (s.events.length > 0) {
+          });
+        }
+
+        if (s.events && s.events.length > 0) {
           let events;
           // sort event, the oldest is first
           events = s.events.sort((x, y) =>
-            x.createdAt > y.createdAt ? 1 : -1
+            (x.createdAt || 0) > (y.createdAt || 0) ? 1 : -1
           );
           if (lastEventDate) {
-            events = s.events.filter((x) => x.createdAt > lastEventDate);
+            events = s.events.filter(
+              (x) => (x.createdAt || 0) > (lastEventDate || 0)
+            );
           } else {
             // show last n events
             events = showOlder ? events.slice(-showOlder) : [];
           }
           events.forEach((x) => {
-            if (!passLastEventDate || passLastEventDate < x.createdAt) {
+            if (
+              x.createdAt &&
+              (!passLastEventDate || passLastEventDate < x.createdAt)
+            ) {
               passLastEventDate = x.createdAt;
             }
             callback({
               type: "message",
-              message: x.message,
-              createdAt: x.createdAt,
+              message: x.message || "",
+              createdAt: x.createdAt || new Date(),
               source: s.serviceName,
             });
           });
         }
       });
-      if (!lastEventDate || passLastEventDate > lastEventDate) {
+      if (
+        !lastEventDate ||
+        (passLastEventDate || new Date(0)) > lastEventDate
+      ) {
         lastEventDate = passLastEventDate;
       }
     } catch (e) {
@@ -262,7 +288,6 @@ export function ecsWatch(
     }
   };
 
-  let resolve, reject;
   const promise: Promise<void> = new Promise((res, rej) => {
     resolve = res;
     reject = rej;

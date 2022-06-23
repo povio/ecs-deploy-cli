@@ -6,35 +6,46 @@ import yargs from "yargs";
 import { clean as semverClean, inc as semverInc } from "semver";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
-import { getRelease } from "~git.helper";
-import cli, { chk } from "~cli.helper";
 import {
-  Option,
+  Config,
   getYargsOptions,
-  loadYargsConfig,
+  Option,
   YargsOptions,
-} from "~yargs.helper";
+  loadYargsConfig,
+  ReleaseStrategy,
+  getVersion,
+  logBanner,
+  getToolEnvironment,
+  logVariable,
+  logInfo,
+  logWarning,
+  logNotice,
+  chk,
+  confirm,
+  logSuccess,
+} from "node-stage";
+
 import {
   ecrImageExists,
   ecsGetCurrentTaskDefinition,
   ecsRegisterTaskDefinition,
   ecsUpdateService,
   ecsWatch,
-} from "~aws.helper";
-import { printDiff } from "~diff.helper";
+} from "../helpers/aws.helper";
+import { printDiff } from "../helpers/diff.helper";
 
-class EcsDeployOptions extends YargsOptions {
+class EcsDeployOptions implements YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
-  pwd: string;
+  pwd!: string;
 
   @Option({ envAlias: "STAGE", demandOption: true })
-  stage: string;
+  stage!: string;
 
   @Option({ envAlias: "SERVICE" })
-  service: string;
+  service!: string;
 
   @Option({ envAlias: "RELEASE", demandOption: true })
-  release: string;
+  release!: string;
 
   @Option({
     envAlias: "RELEASE_STRATEGY",
@@ -42,43 +53,45 @@ class EcsDeployOptions extends YargsOptions {
     choices: ["gitsha", "gitsha-stage"],
     type: "string",
   })
-  releaseStrategy: "gitsha" | "gitsha-stage";
+  releaseStrategy!: ReleaseStrategy;
 
   @Option({ envAlias: "AWS_REPO_NAME", demandOption: true })
-  ecrRepoName: string;
+  ecrRepoName!: string;
 
   @Option({ envAlias: "ECS_TASK_FAMILY", demandOption: true })
-  ecsTaskFamily: string;
+  ecsTaskFamily!: string;
 
   @Option({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
-  ecsClusterName: string;
+  ecsClusterName!: string;
 
   @Option({ envAlias: "ECS_SERVICE_NAME", demandOption: true })
-  ecsServiceName: string;
+  ecsServiceName!: string;
 
   @Option({ envAlias: "AWS_REGION", demandOption: true })
-  awsRegion: string;
+  awsRegion!: string;
 
   @Option({ envAlias: "AWS_ACCOUNT_ID", demandOption: true })
-  awsAccountId: string;
+  awsAccountId!: string;
 
   @Option({ envAlias: "CI" })
-  ci: boolean;
+  ci!: boolean;
 
   @Option({ envAlias: "SKIP_ECR_EXISTS_CHECK" })
-  skipEcrExistsCheck: boolean;
+  skipEcrExistsCheck!: boolean;
 
   @Option({ envAlias: "VERBOSE", default: false })
-  verbose: boolean;
+  verbose!: boolean;
 
   @Option({ envAlias: "VERSION", type: "string", alias: "ecsVersion" })
-  appVersion: string;
+  appVersion!: string;
 
   @Option({
     type: "string",
     describe: "The version to base the next revision on",
   })
-  ecsBaseTaskVersion: string;
+  ecsBaseTaskVersion!: string;
+
+  config!: Config;
 }
 
 export const command: yargs.CommandModule = {
@@ -88,33 +101,33 @@ export const command: yargs.CommandModule = {
     return y
       .options(getYargsOptions(EcsDeployOptions))
       .middleware(async (_argv) => {
-        const argv = loadYargsConfig(
+        return (await loadYargsConfig(
           EcsDeployOptions,
           _argv as any,
-          "ecs_deploy"
-        );
-        argv.release =
-          argv.release || (await getRelease(argv.pwd, argv.releaseStrategy));
-
-        return argv as any;
+          "ecsDeploy"
+        )) as any;
       }, true);
   },
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsDeployOptions;
 
-    await cli.printEnvironment(argv);
+    logBanner(`EcsBuild ${getVersion()}`);
 
-    cli.banner("Deploy Environment");
+    for (const [k, v] of Object.entries(await getToolEnvironment(argv))) {
+      logVariable(k, v);
+    }
 
-    cli.variable("AWS_REPO_NAME", argv.ecrRepoName);
-    cli.variable("ECS_TASK_FAMILY", argv.ecsTaskFamily);
-    cli.variable("ECS_CLUSTER_NAME", argv.ecsClusterName);
-    cli.variable("ECS_SERVICE_NAME", argv.ecsServiceName);
+    logBanner("Deploy Environment");
+
+    logVariable("AWS_REPO_NAME", argv.ecrRepoName);
+    logVariable("ECS_TASK_FAMILY", argv.ecsTaskFamily);
+    logVariable("ECS_CLUSTER_NAME", argv.ecsClusterName);
+    logVariable("ECS_SERVICE_NAME", argv.ecsServiceName);
 
     // load ECR details
     const imageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${argv.release}`;
 
-    cli.info(`Image name: ${imageName}`);
+    logInfo(`Image name: ${imageName}`);
 
     if (!argv.skipEcrExistsCheck) {
       if (
@@ -128,10 +141,10 @@ export const command: yargs.CommandModule = {
       }
     }
 
-    cli.info("Getting latest task definition..");
+    logInfo("Getting latest task definition..");
 
     if (argv.ecsBaseTaskVersion) {
-      cli.notice(
+      logNotice(
         `Basing next version on version ${argv.ecsTaskFamily}:${argv.ecsBaseTaskVersion}`
       );
     }
@@ -143,7 +156,7 @@ export const command: yargs.CommandModule = {
         : argv.ecsTaskFamily,
     });
 
-    if (previousTaskDefinition.containerDefinitions.length != 1) {
+    if (previousTaskDefinition?.containerDefinitions?.length != 1) {
       // this could be handled somehow
       throw new Error("Task definition contains none or more than 1 tasks");
     }
@@ -153,10 +166,17 @@ export const command: yargs.CommandModule = {
 
     const globalPrefix = process.env.CONFIG_PREFIX || "app";
 
+    if (!previousContainerDefinition.environment) {
+      throw new Error("Task definition missing enviorment");
+    }
+
     //  get previous environment
     const taskDefinitionContainerEnvironment =
       previousContainerDefinition.environment.reduce((acc, cur) => {
-        acc[cur.name] = cur.value;
+        if (cur.name) {
+          // @ts-ignore
+          acc[cur.name] = cur.value;
+        }
         return acc;
       }, {} as Record<string, string>);
 
@@ -169,17 +189,17 @@ export const command: yargs.CommandModule = {
           previousVersion.replace(/^([^0-9]+)/, "")
         );
         if (!cleanedVersion) {
-          cli.warning("Version could not be parsed");
+          logWarning("Version could not be parsed");
         } else {
           // make the version ${stage}-0.0.1
           version = `${argv.stage}-${semverInc(cleanedVersion, "patch")}`;
-          cli.info("Incrementing version");
+          logInfo("Incrementing version");
         }
       } else {
-        cli.notice("No version provided");
+        logNotice("No version provided");
       }
     } else {
-      cli.variable(`${globalPrefix}__version`, version);
+      logVariable(`${globalPrefix}__version`, version);
     }
 
     // override task container env from config.yaml
@@ -212,10 +232,15 @@ export const command: yargs.CommandModule = {
 
     // get previous secret pointers
     const taskDefinitionContainerSecrets: Record<string, string> =
-      previousContainerDefinition.secrets.reduce((acc, cur) => {
-        acc[cur.name] = cur.valueFrom;
-        return acc;
-      }, {} as Record<string, string>);
+      previousContainerDefinition.secrets
+        ? previousContainerDefinition.secrets.reduce((acc, cur) => {
+            if (cur.name) {
+              // @ts-ignore
+              acc[cur.name] = cur.valueFrom;
+            }
+            return acc;
+          }, {} as Record<string, string>)
+        : {};
 
     // override task container secrets from config.yaml
     if (
@@ -259,32 +284,38 @@ export const command: yargs.CommandModule = {
       memory: previousTaskDefinition.memory,
     };
 
-    cli.banner("Container Definition Diff");
+    logBanner("Container Definition Diff");
     printDiff(
       previousContainerDefinition,
-      taskDefinitionRequest.containerDefinitions[0]
+      taskDefinitionRequest?.containerDefinitions?.[0] || {}
     );
 
-    cli.banner("Update task definition & service");
+    logBanner("Update task definition & service");
 
     if (!argv.ci) {
-      if (!(await cli.confirm("Press enter to deploy task to ECS..."))) {
-        cli.info("Canceled");
+      if (!(await confirm("Press enter to deploy task to ECS..."))) {
+        logInfo("Canceled");
         return;
       }
     }
 
-    cli.info("Creating new task..");
+    logInfo("Creating new task..");
 
     const taskDefinition = await ecsRegisterTaskDefinition({
       region: argv.awsRegion,
       taskDefinitionRequest,
     });
 
-    cli.banner("Task Definition Diff");
+    if (!taskDefinition || !taskDefinition.taskDefinitionArn) {
+      console.log({ taskDefinition: JSON.stringify(taskDefinition) });
+      // this can't really happen, the call above should error out
+      throw new Error("Task could not be registered.");
+    }
+
+    logBanner("Task Definition Diff");
     printDiff(taskDefinition, previousTaskDefinition);
 
-    cli.info(`Updating service task to revision ${taskDefinition.revision}...`);
+    logInfo(`Updating service task to revision ${taskDefinition.revision}...`);
 
     await ecsUpdateService({
       region: argv.awsRegion,
@@ -294,9 +325,9 @@ export const command: yargs.CommandModule = {
     });
 
     if (!argv.ci) {
-      cli.success(`Service updated. You can exit by using CTRL-C now.`);
+      logSuccess(`Service updated. You can exit by using CTRL-C now.`);
 
-      cli.banner("Service Monitor");
+      logBanner("Service Monitor");
 
       const watch = ecsWatch(
         {
@@ -309,21 +340,21 @@ export const command: yargs.CommandModule = {
             case "services":
               if (
                 !message.services.some((x) =>
-                  x.deployments.some(
+                  x?.deployments?.some(
                     (d) =>
                       d.desiredCount !== d.runningCount ||
                       d.rolloutState !== "COMPLETED"
                   )
                 )
               ) {
-                cli.success("Service successfully deployed!");
+                logSuccess("Service successfully deployed!");
                 watch.stop();
               }
               break;
             case "deployment":
               const d = message.deployment;
               console.log(
-                `[${chk.yellow(d.taskDefinition.replace(/^[^\/]+/, ""))} ${
+                `[${chk.yellow(d.taskDefinition?.replace(/^[^\/]+/, ""))} ${
                   d.status
                 } Running ${d.runningCount}/${d.desiredCount} Pending ${
                   d.pendingCount

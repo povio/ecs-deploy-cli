@@ -1,7 +1,5 @@
-import chalk from "chalk";
 import { diffJson } from "diff";
-
-export const chk = new chalk.Instance({ level: 2 });
+import { chk } from "node-stage";
 
 export function printDiff(one: object, two: object) {
   for (const { value, added, removed } of diffJson(one, two)) {

@@ -39,7 +39,7 @@ export class Docker {
       "version --format '{{json .}}'",
       options,
       (response) => {
-        const data = JSON.parse(response.raw);
+        const data = JSON.parse(response.raw as string);
         return `Client ${data.Client.Version} Server ${data.Server.Version}`;
       }
     );
@@ -58,7 +58,7 @@ export class Docker {
       `login --username ${data.username} --password-stdin ${data.serveraddress}`,
       { ...options, stdin: data.password },
       (response) => {
-        if (/Login Succeeded/.test(response.raw)) return true;
+        if (/Login Succeeded/.test(response.raw as string)) return true;
         throw new Error("Invalid response while logging in");
       }
     );
@@ -90,7 +90,7 @@ export class Docker {
       `image inspect ${imageName} --format="found"`,
       options,
       (response) => {
-        return /found/.test(response.raw);
+        return /found/.test(response.raw as string);
       },
       (e) => {
         if (/No such image/.test(e.message)) {
@@ -196,7 +196,7 @@ export class Docker {
         ...response,
         data: parser(response),
       };
-    } catch (e) {
+    } catch (e: any) {
       e.response = response;
       if (onError) {
         return {
@@ -245,6 +245,15 @@ export class Docker {
           resolve(stdout);
         }
       );
+
+      if (
+        !childProcess ||
+        !childProcess.stdin ||
+        !childProcess.stdout ||
+        !childProcess.stderr
+      ) {
+        throw new Error("Could not set up docker command");
+      }
 
       if (options.stdin) {
         childProcess.stdin.write(options.stdin);

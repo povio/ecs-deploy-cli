@@ -5,35 +5,40 @@
 import yargs from "yargs";
 
 import {
+  Config,
   getYargsOptions,
-  loadYargsConfig,
   Option,
   YargsOptions,
-} from "~yargs.helper";
-import cli, { chk } from "~cli.helper";
-import { ecsWatch } from "~aws.helper";
+  loadYargsConfig,
+  logNotice,
+  chk,
+} from "node-stage";
 
-class EcsWatchOptions extends YargsOptions {
+import { ecsWatch } from "../helpers/aws.helper";
+
+class EcsWatchOptions implements YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
-  pwd: string;
+  pwd!: string;
 
   @Option({ envAlias: "STAGE", demandOption: true })
-  stage: string;
+  stage!: string;
 
   @Option({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
-  ecsClusterName: string;
+  ecsClusterName!: string;
 
   @Option({ envAlias: "ECS_SERVICE_NAME" })
-  ecsServiceName: string;
+  ecsServiceName!: string;
 
   @Option({ envAlias: "AWS_REGION", demandOption: true })
-  awsRegion: string;
+  awsRegion!: string;
 
   @Option({ envAlias: "VERBOSE", default: false })
-  verbose: boolean;
+  verbose!: boolean;
 
   @Option({ default: 10, describe: "Time in seconds between checks" })
-  delay: number;
+  delay!: number;
+
+  config!: Config;
 }
 
 export const command: yargs.CommandModule = {
@@ -43,16 +48,16 @@ export const command: yargs.CommandModule = {
     return y
       .options(getYargsOptions(EcsWatchOptions))
       .middleware(async (_argv) => {
-        return loadYargsConfig(
+        return (await loadYargsConfig(
           EcsWatchOptions,
           _argv as any,
-          "ecs_deploy"
-        ) as any;
+          "ecsDeploy"
+        )) as any;
       }, true);
   },
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsWatchOptions;
-    cli.notice(`Watching ${argv.ecsServiceName}`);
+    logNotice(`Watching ${argv.ecsServiceName}`);
     await ecsWatch(
       {
         region: argv.awsRegion,
@@ -64,7 +69,7 @@ export const command: yargs.CommandModule = {
           case "deployment":
             const d = message.deployment;
             console.log(
-              `[${chk.yellow(d.taskDefinition.replace(/^[^\/]+/, ""))} ${
+              `[${chk.yellow(d.taskDefinition?.replace(/^[^\/]+/, ""))} ${
                 d.status
               } Running ${d.runningCount}/${d.desiredCount} Pending ${
                 d.pendingCount
