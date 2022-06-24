@@ -7,7 +7,7 @@ Features:
 - Environment and SSM credentias storage conventions
 - CircleCi pipeline example
 - Cross-platform (made with TypeScript/Javascript, external requirements: `git`, `docker`)
-- Uses the [node-stage](https://github.com/poviolabs/node-stage]) tool for configuration.
+- Uses the [node-stage](https://github.com/poviolabs/node-stage) tool for configuration.
 
 
 Examples:
@@ -127,10 +127,3 @@ yarn build
 # test build
 yarn test --help
 ```
-
-### Analyze package
-
-```bash
-npx webpack-bundle-analyzer ./dist/stats.json
-```
-
