@@ -23,6 +23,13 @@ yarn add ecs-deploy-cli@poviolabs/ecs-deploy-cli#v2
 yarn up ecs-deploy-cli@poviolabs/ecs-deploy-cli#v2
 ```
 
+
+or install for CI
+
+```bash
+npm install --global ecs-deploy-cli@poviolabs/ecs-deploy-cli#v2
+```
+
 ## Configure
 
 ### config.yaml
