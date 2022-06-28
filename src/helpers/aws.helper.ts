@@ -100,7 +100,7 @@ export async function ecrGetDockerCredentials(options: { region: string }) {
   const auth = await ecr.send(new GetAuthorizationTokenCommand({}));
   const authorizationToken = auth?.authorizationData?.[0].authorizationToken;
   const proxyEndpoint = auth?.authorizationData?.[0].proxyEndpoint;
-  if (!authorizationToken || proxyEndpoint) {
+  if (!authorizationToken || !proxyEndpoint) {
     throw new Error("Could not get auth token or proxy");
   }
   let password;
