@@ -1,6 +1,6 @@
 {
   "name": "@poviolabs/ecs-deploy-cli",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "packageManager": "yarn@3.2.1",
   "bin": "./dist/sh.js",
   "scripts": {
