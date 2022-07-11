@@ -25,7 +25,7 @@ jobs:
       ## only install ecs-deploy-cli (call without yarn)
       # - run:
       #     name: Install ecs-deploy-cli
-      #     command: npm install --prefix=$HOME/.local --global ecs-deploy-cli@poviolabs/ecs-deploy-cli#v2
+      #     command: npm install --prefix=$HOME/.local --global ecs-deploy-cli@poviolabs/ecs-deploy-cli#v3
 
       - run:
           name: Build Dockerfile and push to ECR
