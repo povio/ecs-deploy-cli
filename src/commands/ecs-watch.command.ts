@@ -4,15 +4,15 @@
 
 import yargs from "yargs";
 
+import { Config } from "node-stage";
 import {
-  Config,
   getYargsOptions,
   Option,
   YargsOptions,
   loadYargsConfig,
-  logNotice,
-  chk,
-} from "node-stage";
+} from "node-stage/yargs";
+import { logNotice } from "node-stage/cli";
+import { chk } from "node-stage/chalk";
 
 import { ecsWatch } from "../helpers/aws.helper";
 

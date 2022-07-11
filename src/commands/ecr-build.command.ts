@@ -6,23 +6,24 @@
 import yargs from "yargs";
 import path from "path";
 
+import { Config, ReleaseStrategy } from "node-stage";
 import {
-  Config,
-  getYargsOptions,
   Option,
   YargsOptions,
   loadYargsConfig,
-  ReleaseStrategy,
+  getYargsOptions,
+} from "node-stage/yargs";
+import {
   logBanner,
   getToolEnvironment,
   logVariable,
   logInfo,
-  getGitChanges,
   logWarning,
-  logError,
   logNotice,
-  chk,
-} from "node-stage";
+  logError,
+} from "node-stage/cli";
+import { chk } from "node-stage/chalk";
+import { getGitChanges } from "node-stage/git";
 
 import { getVersion } from "../helpers/version.helper";
 

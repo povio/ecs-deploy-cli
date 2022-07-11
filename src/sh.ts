@@ -2,12 +2,11 @@
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { logError, logInfo } from "node-stage/cli";
 
 import { command as buildCommand } from "./commands/ecr-build.command";
 import { command as deployCommand } from "./commands/ecs-deploy.command";
 import { command as watchCommand } from "./commands/ecs-watch.command";
-import { logError, logInfo } from "node-stage";
-
 import { getVersion } from "./helpers/version.helper";
 
 yargs(hideBin(process.argv))

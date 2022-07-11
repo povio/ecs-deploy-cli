@@ -19,7 +19,7 @@ import { fromIni } from "@aws-sdk/credential-provider-ini";
 import { fromEnv } from "@aws-sdk/credential-provider-env";
 import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
 
-import { logVerbose } from "node-stage";
+import { logVerbose } from "node-stage/cli";
 
 function getCredentials() {
   if (process.env.AWS_PROFILE) {

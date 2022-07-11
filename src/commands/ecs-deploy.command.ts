@@ -6,23 +6,25 @@ import yargs from "yargs";
 import { clean as semverClean, inc as semverInc } from "semver";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
+import { Config, ReleaseStrategy } from "node-stage";
 import {
-  Config,
-  getYargsOptions,
   Option,
   YargsOptions,
   loadYargsConfig,
-  ReleaseStrategy,
+  getYargsOptions,
+} from "node-stage/yargs";
+import {
+
   logBanner,
   getToolEnvironment,
   logVariable,
   logInfo,
   logWarning,
   logNotice,
-  chk,
   confirm,
   logSuccess,
-} from "node-stage";
+} from "node-stage/cli";
+import { chk, loadColors } from "node-stage/chalk";
 
 import {
   ecrImageExists,
@@ -110,6 +112,8 @@ export const command: yargs.CommandModule = {
   },
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsDeployOptions;
+
+    await loadColors();
 
     logBanner(`EcsBuild ${getVersion()}`);
 
