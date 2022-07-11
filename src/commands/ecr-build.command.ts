@@ -22,7 +22,7 @@ import {
   logNotice,
   logError,
 } from "node-stage/cli";
-import { chk } from "node-stage/chalk";
+import { chk, loadColors } from "node-stage/chalk";
 import { getGitChanges } from "node-stage/git";
 
 import { getVersion } from "../helpers/version.helper";
@@ -118,6 +118,8 @@ export const command: yargs.CommandModule = {
   },
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcrBuildOptions;
+
+    await loadColors();
 
     logBanner(`EcsDeploy ${getVersion()}`);
 

@@ -12,7 +12,7 @@ import {
   loadYargsConfig,
 } from "node-stage/yargs";
 import { logNotice } from "node-stage/cli";
-import { chk } from "node-stage/chalk";
+import { chk, loadColors } from "node-stage/chalk";
 
 import { ecsWatch } from "../helpers/aws.helper";
 
@@ -57,6 +57,7 @@ export const command: yargs.CommandModule = {
   },
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsWatchOptions;
+    await loadColors();
     logNotice(`Watching ${argv.ecsServiceName}`);
     await ecsWatch(
       {
