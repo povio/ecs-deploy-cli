@@ -200,7 +200,7 @@ export const command: yargs.CommandModule = {
     // load previous image to speed up build
     let previousImageName;
     if (argv.ecrCache) {
-      if (!argv.buildx) {
+      if (argv.buildx) {
         throw new Error("Buildx can not be used with ECR Cache");
       }
       // use the previous image for cache
