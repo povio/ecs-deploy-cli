@@ -26,8 +26,10 @@ yarn up ecs-deploy-cli@poviolabs/ecs-deploy-cli#v3
 or install globally
 
 ```bash
-npm i -g ecs-deploy-cli@poviolabs/ecs-deploy-cli#v3 --force
+npm i --location=global ecs-deploy-cli@poviolabs/ecs-deploy-cli#v3 --force
 ```
+
+> Node 14 is incompatible with v3, please use [v2](https://github.com/poviolabs/ecs-deploy-cli/tree/v2) instead.
 
 ## Configure
 

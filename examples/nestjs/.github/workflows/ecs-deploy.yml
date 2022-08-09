@@ -20,7 +20,7 @@ jobs:
           cache: npm
 
       - name: Install CLI tools
-        run: npm i --location=global ecs-deploy-cli@poviolabs/ecs-deploy-cli#v3 slack-notify-cli@poviolabs/slack-notify-cli#v1 --force
+        run: npm i --location=global ecs-deploy-cli@poviolabs/ecs-deploy-cli#v3 slack-notify-cli@poviolabs/slack-notify-cli#v2 --force
 
       - name: Build image and deploy to ECR
         run: >-
