@@ -1,9 +1,18 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import type { NextPage } from "next";
+import Head from "next/head";
+import Image from "next/image";
+import styles from "../styles/Home.module.css";
+import {
+  PUBLIC_RUNTIME_VARIABLE,
+  BUILD_TIME_VARIABLE,
+} from "../config";
 
-const Home: NextPage = () => {
+interface Props {
+  BACKEND_RUNTIME_VARIABLE?: string;
+}
+
+
+const Home: NextPage<Props> = ({BACKEND_RUNTIME_VARIABLE}) => {
   return (
     <div className={styles.container}>
       <Head>
@@ -18,8 +27,16 @@ const Home: NextPage = () => {
         </h1>
 
         <p className={styles.description}>
-          Get started by editing{' '}
+          Get started by editing{" "}
           <code className={styles.code}>pages/index.tsx</code>
+        </p>
+
+        <h2>Using environment variables: </h2>
+
+        <p>
+          BUILD_TIME_VARIABLE = {BUILD_TIME_VARIABLE} <br />
+          PUBLIC_RUNTIME_VARIABLE = {PUBLIC_RUNTIME_VARIABLE} <br />
+          BACKEND_RUNTIME_VARIABLE = {BACKEND_RUNTIME_VARIABLE} <br />
         </p>
 
         <div className={styles.grid}>
@@ -59,14 +76,22 @@ const Home: NextPage = () => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
+          Powered by{" "}
           <span className={styles.logo}>
             <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
           </span>
         </a>
       </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+Home.getInitialProps = async ({req}) => {
+  const protocol = req?.headers['x-forwarded-proto'] || 'http'
+  const baseUrl = req ? `${protocol}://${req.headers.host}` : ''
+  const BACKEND_RUNTIME_VARIABLE = (await (await fetch(baseUrl + '/api/hello')).json()).name;
+  return { BACKEND_RUNTIME_VARIABLE }
+};
+
+
+export default Home;
