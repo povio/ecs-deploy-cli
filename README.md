@@ -13,6 +13,7 @@ Features:
 Examples:
 
 - [NestJs](./examples/nestjs) Docker and Pipeline
+- [NextJs](./examples/nextjs) Next
 
 # Usage
 
