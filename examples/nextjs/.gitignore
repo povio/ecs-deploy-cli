@@ -27,6 +27,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
 
 # vercel
 .vercel
@@ -36,5 +37,10 @@ yarn-error.log*
 next-env.d.ts
 
 # yarn
+.yarn/*
 .yarn/cache
-.env
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
