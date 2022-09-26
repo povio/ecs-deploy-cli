@@ -58,7 +58,7 @@ stages:
 
     ecsSecrets:
       TYPEORM_PASSWORD: 'arn:aws:secretsmanager:eu-central-1:000000000000:....'
-      app__auth__secret: 'arn:aws:ssm:eu-central-1:000000000000:/myapp-dev/secret'
+      app__auth__secret: 'arn:aws:ssm:eu-central-1:000000000000:parameter/myapp-dev/auth/secret'
     
     ## Inject variable into docker build
     ##  This can be used for next.js along with `--releaseStrategy gitsha-stage`
