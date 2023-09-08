@@ -25,7 +25,7 @@ export class Docker {
       cwd?: string;
       env?: Record<string, string>;
       verbose?: boolean;
-    } = {}
+    } = {},
   ) {
     this.cwd = options.cwd || process.cwd();
     this.env = options.env || {};
@@ -33,7 +33,7 @@ export class Docker {
   }
 
   public async version(
-    options?: CommandOptions
+    options?: CommandOptions,
   ): Promise<CommandResponse<string>> {
     return this.handleResponse(
       "version --format '{{json .}}'",
@@ -41,7 +41,7 @@ export class Docker {
       (response) => {
         const data = JSON.parse(response.raw as string);
         return `Client ${data.Client.Version} Server ${data.Server.Version}`;
-      }
+      },
     );
   }
 
@@ -52,7 +52,7 @@ export class Docker {
       password: string;
       // email?: string;
     },
-    options?: CommandOptions
+    options?: CommandOptions,
   ) {
     return this.handleResponse(
       `login --username ${data.username} --password-stdin ${data.serveraddress}`,
@@ -60,7 +60,7 @@ export class Docker {
       (response) => {
         if (/Login Succeeded/.test(response.raw as string)) return true;
         throw new Error("Invalid response while logging in");
-      }
+      },
     );
   }
 
@@ -68,19 +68,15 @@ export class Docker {
     data: {
       serveraddress?: string;
     },
-    options?: CommandOptions
+    options?: CommandOptions,
   ) {
-    return this.handleResponse(
-      `logout  ${data.serveraddress}`,
-      options,
-      (response) => {
-        return;
-      }
-    );
+    return this.handleResponse(`logout  ${data.serveraddress}`, options, () => {
+      return;
+    });
   }
 
   public async imagePull(imageName: string, options?: CommandOptions) {
-    return this.handleResponse(`pull ${imageName}`, options, (response) => {
+    return this.handleResponse(`pull ${imageName}`, options, () => {
       return undefined;
     });
   }
@@ -97,7 +93,7 @@ export class Docker {
           return false;
         }
         throw e;
-      }
+      },
     );
   }
 
@@ -113,7 +109,7 @@ export class Docker {
       platform?: string;
       push: boolean;
     },
-    options?: CommandOptions
+    options?: CommandOptions,
   ) {
     if (buildOptions.buildx) {
       await this.execute("buildx install");
@@ -152,11 +148,9 @@ export class Docker {
         command += " --push";
       }
 
-      return this.handleResponse(command, options, (response) => {
+      return this.handleResponse(command, options, () => {
         return undefined;
       });
-    } catch (e) {
-      throw e;
     } finally {
       if (buildOptions.buildx) {
         await this.execute("buildx rm ecs-build");
@@ -165,7 +159,7 @@ export class Docker {
   }
 
   public async imagePush(imageName: string, options?: CommandOptions) {
-    return this.handleResponse(`push ${imageName}`, options, (response) => {
+    return this.handleResponse(`push ${imageName}`, options, () => {
       return undefined;
     });
   }
@@ -174,7 +168,7 @@ export class Docker {
     execCommand: string,
     options: CommandOptions = {},
     parser: (rawResponse: CommandResponse<undefined>) => T,
-    onError?: (e: any) => T
+    onError?: (e: any) => T,
   ): Promise<CommandResponse<T>> {
     let response: CommandResponse<any> = { execCommand };
     try {
@@ -211,7 +205,7 @@ export class Docker {
 
   private async execute(
     execCommand: string,
-    options: CommandOptions = {}
+    options: CommandOptions = {},
   ): Promise<CommandResponse<undefined>> {
     const execOptions = {
       cwd: this.cwd,
@@ -237,13 +231,13 @@ export class Docker {
             return reject(
               Object.assign(
                 new Error(`Error: stdout ${stdout}, stderr ${stderr}`),
-                { ...error, stdout, stderr, innerError: error }
-              )
+                { ...error, stdout, stderr, innerError: error },
+              ),
             );
           }
 
           resolve(stdout);
-        }
+        },
       );
 
       if (

@@ -6,13 +6,12 @@
 import yargs from "yargs";
 import path from "path";
 
-import { Config, ReleaseStrategy } from "node-stage";
 import {
   Option,
   YargsOptions,
   loadYargsConfig,
   getYargsOptions,
-} from "node-stage/yargs";
+} from "../helpers/yargs.helper";
 import {
   logBanner,
   getToolEnvironment,
@@ -21,9 +20,9 @@ import {
   logWarning,
   logNotice,
   logError,
-} from "node-stage/cli";
-import { chk, loadColors } from "node-stage/chalk";
-import { getGitChanges } from "node-stage/git";
+} from "../helpers/cli.helper";
+import { chk } from "../helpers/chalk.helper";
+import { getGitChanges } from "../helpers/git.helper";
 
 import { getVersion } from "../helpers/version.helper";
 
@@ -34,6 +33,8 @@ import {
   getAwsIdentity,
 } from "../helpers/aws.helper";
 import { Docker } from "../helpers/docker.helper";
+import { ReleaseStrategy } from "../helpers/config.types";
+import { Config } from "../helpers/config.helper";
 
 class EcrBuildOptions implements YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -112,14 +113,12 @@ export const command: yargs.CommandModule = {
         return (await loadYargsConfig(
           EcrBuildOptions,
           _argv as any,
-          "ecsDeploy"
+          "ecsDeploy",
         )) as any;
       }, true);
   },
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcrBuildOptions;
-
-    await loadColors();
 
     logBanner(`EcsDeploy ${getVersion()}`);
 
@@ -153,10 +152,13 @@ export const command: yargs.CommandModule = {
       cwd: argv.pwd,
       env: Object.entries(process.env)
         .filter((x) => x[0].startsWith("DOCKER_"))
-        .reduce((acc, [key, value]) => {
-          acc[key] = value as string;
-          return acc;
-        }, {} as Record<string, string>),
+        .reduce(
+          (acc, [key, value]) => {
+            acc[key] = value as string;
+            return acc;
+          },
+          {} as Record<string, string>,
+        ),
     });
 
     logVariable("release", argv.release);
@@ -225,7 +227,7 @@ export const command: yargs.CommandModule = {
     if (argv.config.ecsDockerEnv) {
       if (argv.releaseStrategy === "gitsha") {
         throw new Error(
-          "Docker environment injection can not be used with releaseStrategy=gitsha"
+          "Docker environment injection can not be used with releaseStrategy=gitsha",
         );
       }
     }
@@ -248,7 +250,7 @@ export const command: yargs.CommandModule = {
           platform: argv.platform,
           push: argv.buildx && !argv.skipPush,
         },
-        { verbose: true }
+        { verbose: true },
       );
     }
 
@@ -260,8 +262,8 @@ export const command: yargs.CommandModule = {
 
       logInfo(
         `Done! Deploy the service with  ${chk.magenta(
-          `yarn ecs-deploy-cli deploy --stage ${argv.stage}`
-        )}`
+          `yarn ecs-deploy-cli deploy --stage ${argv.stage}`,
+        )}`,
       );
     }
   },

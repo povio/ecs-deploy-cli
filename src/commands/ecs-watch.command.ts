@@ -3,16 +3,15 @@
  */
 
 import yargs from "yargs";
-
-import { Config } from "node-stage";
 import {
+  Config,
   getYargsOptions,
+  loadYargsConfig,
   Option,
   YargsOptions,
-  loadYargsConfig,
-} from "node-stage/yargs";
-import { logNotice } from "node-stage/cli";
-import { chk, loadColors } from "node-stage/chalk";
+} from "../helpers/yargs.helper";
+import { logNotice } from "../helpers/cli.helper";
+import { chk } from "../helpers/chalk.helper";
 
 import { ecsWatch } from "../helpers/aws.helper";
 
@@ -51,13 +50,12 @@ export const command: yargs.CommandModule = {
         return (await loadYargsConfig(
           EcsWatchOptions,
           _argv as any,
-          "ecsDeploy"
+          "ecsDeploy",
         )) as any;
       }, true);
   },
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsWatchOptions;
-    await loadColors();
     logNotice(`Watching ${argv.ecsServiceName}`);
     await ecsWatch(
       {
@@ -74,18 +72,18 @@ export const command: yargs.CommandModule = {
                 d.status
               } Running ${d.runningCount}/${d.desiredCount} Pending ${
                 d.pendingCount
-              } Rollout ${d.rolloutState}`
+              } Rollout ${d.rolloutState}`,
             );
             break;
           case "message":
             console.log(
               `[${chk.magenta(
-                message.source
-              )} ${message.createdAt.toISOString()}] ${message.message}`
+                message.source,
+              )} ${message.createdAt.toISOString()}] ${message.message}`,
             );
             break;
         }
-      }
+      },
     ).promise;
   },
 };

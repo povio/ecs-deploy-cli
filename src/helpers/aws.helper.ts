@@ -18,8 +18,7 @@ import {
 import { fromIni } from "@aws-sdk/credential-provider-ini";
 import { fromEnv } from "@aws-sdk/credential-provider-env";
 import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
-
-import { logVerbose } from "node-stage/cli";
+import { logVerbose } from "./cli.helper";
 
 function getCredentials() {
   if (process.env.AWS_PROFILE) {
@@ -54,7 +53,7 @@ export async function ecrImageExists(options: {
       new DescribeImagesCommand({
         repositoryName: options.repositoryName,
         imageIds: options.imageIds,
-      })
+      }),
     );
 
     if (process.env.VERBOSE) {
@@ -79,7 +78,7 @@ export async function ecrGetLatestImageTag(options: {
       await ecr.send(
         new DescribeImagesCommand({
           repositoryName: options.repositoryName,
-        })
+        }),
       )
     ).imageDetails as ImageDetail[];
     images.sort((a, b) => {
@@ -134,7 +133,7 @@ export async function ecsGetCurrentTaskDefinition(options: {
     await ecs.send(
       new DescribeTaskDefinitionCommand({
         taskDefinition: options.taskDefinition,
-      })
+      }),
     )
   ).taskDefinition;
   if (process.env.VERBOSE) {
@@ -150,7 +149,7 @@ export async function ecsRegisterTaskDefinition(options: {
   const ecs = getECSInstance({ region: options.region });
   const taskDefinition = (
     await ecs.send(
-      new RegisterTaskDefinitionCommand(options.taskDefinitionRequest)
+      new RegisterTaskDefinitionCommand(options.taskDefinitionRequest),
     )
   ).taskDefinition;
   if (process.env.VERBOSE) {
@@ -172,7 +171,7 @@ export async function ecsUpdateService(options: {
         cluster: options.cluster,
         service: options.service,
         taskDefinition: options.taskDefinition,
-      })
+      }),
     )
   ).service;
   if (process.env.VERBOSE) {
@@ -203,8 +202,8 @@ export function ecsWatch(
           createdAt: Date;
         }
       | { type: "services"; services: Service[] }
-      | { type: "deployment"; deployment: Deployment }
-  ) => void
+      | { type: "deployment"; deployment: Deployment },
+  ) => void,
 ): { stop: () => void; promise: Promise<void> } {
   const ecs = getECSInstance({ region: options.region });
   const showOlder = options.showOlder === undefined ? 5 : options.showOlder;
@@ -222,7 +221,7 @@ export function ecsWatch(
         new DescribeServicesCommand({
           services: [options.service],
           cluster: options.cluster,
-        })
+        }),
       );
 
       if (!services.services) {
@@ -250,11 +249,11 @@ export function ecsWatch(
           let events;
           // sort event, the oldest is first
           events = s.events.sort((x, y) =>
-            (x.createdAt || 0) > (y.createdAt || 0) ? 1 : -1
+            (x.createdAt || 0) > (y.createdAt || 0) ? 1 : -1,
           );
           if (lastEventDate) {
             events = s.events.filter(
-              (x) => (x.createdAt || 0) > (lastEventDate || 0)
+              (x) => (x.createdAt || 0) > (lastEventDate || 0),
             );
           } else {
             // show last n events

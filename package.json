@@ -1,17 +1,14 @@
 {
   "name": "ecs-deploy-cli",
-  "version": "3.0.0",
-  "packageManager": "yarn@3.2.2",
+  "version": "4.0.0",
+  "packageManager": "yarn@3.6.3",
   "bin": "./dist/sh.js",
   "scripts": {
-    "build": "yarn clean && npm version patch --no-git-tag-version && yarn run build:cli",
-    "build:cli": "tsc -p ./tsconfig.json && chmod +x ./dist/sh.js",
-    "clean": "node tools/cleanup",
-    "test": "jest --no-cache --runInBand",
-    "test:cov": "jest --coverage --no-cache --runInBand",
-    "test:cli": "./dist/sh.js --pwd ./test --stage test",
-    "test:ts-node:cli": "ts-node -r tsconfig-paths/register ./src/sh.ts --pwd ./test --stage test",
-    "lint": "eslint --fix"
+    "run": "tsx ./src/sh.ts",
+    "test": "tsx --test ./src/*.test.ts",
+    "test:watch": "tsx --watch --test ./src/*.test.ts",
+    "build:clean": "rm -rf ./dist",
+    "build": "yarn build:clean && node ./esbuild.mjs && chmod +x ./dist/sh.js"
   },
   "files": [
     "dist"
@@ -30,61 +27,44 @@
     "type": "git"
   },
   "contributors": [
-    "Marko Zabreznik <marko.zabreznik@poviolabs.com>"
+    "Marko Zabreznik <marko.zabreznik@povio.com>"
   ],
   "dependencies": {
-    "@aws-sdk/client-ecr": "3.121.0",
-    "@aws-sdk/client-ecs": "3.121.0",
-    "@aws-sdk/client-sts": "3.121.0",
-    "@aws-sdk/credential-provider-env": "3.110.0",
-    "@aws-sdk/credential-provider-ini": "3.121.0",
-    "@aws-sdk/node-config-provider": "3.110.0",
-    "chalk": "^4.1.2",
-    "diff": "^5.1.0",
-    "node-stage": "poviolabs/node-stage#v2",
-    "prompt-sync": "^4.2.0",
-    "semver": "^7.3.7",
-    "simple-git": "^3.10.0",
-    "yargs": "^17.5.1"
+    "@aws-sdk/client-ecr": "3.408.0",
+    "@aws-sdk/client-ecs": "3.408.0",
+    "@aws-sdk/client-sts": "3.408.0",
+    "@aws-sdk/credential-provider-env": "3.408.0",
+    "@aws-sdk/credential-provider-ini": "3.408.0",
+    "@aws-sdk/node-config-provider": "3.374.0"
   },
   "devDependencies": {
-    "@aws-sdk/types": "3.110.0",
-    "@jest/types": "^28.1.1",
-    "@swc/core": "^1.2.211",
-    "@swc/jest": "^0.2.21",
-    "@types/diff": "^5.0.2",
-    "@types/eslint-plugin-prettier": "^3.1.0",
-    "@types/jest": "^28.1.4",
-    "@types/node": "^16.11.43",
-    "@types/prettier": "^2.6.3",
-    "@types/prompt-sync": "^4.1.1",
-    "@types/semver": "^7.3.10",
-    "@types/yargs": "^17.0.10",
-    "@typescript-eslint/eslint-plugin": "^5.30.5",
-    "@typescript-eslint/parser": "^5.30.5",
-    "eslint": "^8.19.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-import-helpers": "^1.2.1",
-    "eslint-plugin-prettier": "^4.2.1",
-    "jest": "^28.1.2",
-    "prettier": "^2.7.1",
-    "source-map-support": "^0.5.21",
-    "ts-jest": "^28.0.5",
-    "ts-node": "^10.8.2",
-    "tsconfig-paths": "^4.0.0",
-    "typescript": "4.7.4"
+    "reflect-metadata": "^0.1.13",
+    "@aws-sdk/types": "3.408.0",
+    "@types/diff": "^5.0.3",
+    "@types/node": "^20.5.9",
+    "@types/prettier": "^3.0.0",
+    "@types/prompt-sync": "^4.2.0",
+    "@types/semver": "^7.5.1",
+    "@types/yargs": "^17.0.24",
+    "@typescript-eslint/eslint-plugin": "^6.6.0",
+    "@typescript-eslint/parser": "^6.6.0",
+    "chalk": "^5.3.0",
+    "diff": "^5.1.0",
+    "esbuild": "^0.19.2",
+    "eslint": "^8.48.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.3",
+    "prompt-sync": "^4.2.0",
+    "semver": "^7.5.4",
+    "simple-git": "^3.19.1",
+    "tsx": "^3.12.8",
+    "typescript": "^5.2.2",
+    "yargs": "^17.7.2"
   },
   "engines": {
     "node": ">= 14",
     "yarn": ">= 3.2",
     "npm": ">= 8"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "verbose": true,
-    "transform": {
-      "^.+\\.(t|j)sx?$": "@swc/jest"
-    }
   }
 }

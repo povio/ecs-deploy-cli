@@ -2,11 +2,11 @@
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { logError, logInfo } from "node-stage/cli";
 
 import { command as buildCommand } from "./commands/ecr-build.command";
 import { command as deployCommand } from "./commands/ecs-deploy.command";
 import { command as watchCommand } from "./commands/ecs-watch.command";
+import { logError, logInfo } from "./helpers/cli.helper";
 import { getVersion } from "./helpers/version.helper";
 
 yargs(hideBin(process.argv))
@@ -22,7 +22,7 @@ yargs(hideBin(process.argv))
   .fail((msg, err, yargs) => {
     if (msg) logError(msg);
     if (err) {
-      if (!!process.env.VERBOSE) {
+      if (process.env.VERBOSE) {
         console.error(err);
       } else {
         logError(err.message);

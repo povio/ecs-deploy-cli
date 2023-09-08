@@ -6,25 +6,25 @@ import yargs from "yargs";
 import { clean as semverClean, inc as semverInc } from "semver";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
-import { Config, ReleaseStrategy } from "node-stage";
 import {
   Option,
   YargsOptions,
   loadYargsConfig,
   getYargsOptions,
-} from "node-stage/yargs";
+  Config,
+} from "../helpers/yargs.helper";
 import {
-
   logBanner,
   getToolEnvironment,
   logVariable,
   logInfo,
   logWarning,
   logNotice,
-  confirm,
   logSuccess,
-} from "node-stage/cli";
-import { chk, loadColors } from "node-stage/chalk";
+} from "../helpers/cli.helper";
+import { chk } from "../helpers/chalk.helper";
+
+import { getVersion } from "../helpers/version.helper";
 
 import {
   ecrImageExists,
@@ -34,7 +34,7 @@ import {
   ecsWatch,
 } from "../helpers/aws.helper";
 import { printDiff } from "../helpers/diff.helper";
-import { getVersion } from "../helpers/version.helper";
+import { ReleaseStrategy } from "../helpers/config.types";
 
 class EcsDeployOptions implements YargsOptions {
   @Option({ envAlias: "PWD", demandOption: true })
@@ -106,14 +106,12 @@ export const command: yargs.CommandModule = {
         return (await loadYargsConfig(
           EcsDeployOptions,
           _argv as any,
-          "ecsDeploy"
+          "ecsDeploy",
         )) as any;
       }, true);
   },
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsDeployOptions;
-
-    await loadColors();
 
     logBanner(`EcsBuild ${getVersion()}`);
 
@@ -149,7 +147,7 @@ export const command: yargs.CommandModule = {
 
     if (argv.ecsBaseTaskVersion) {
       logNotice(
-        `Basing next version on version ${argv.ecsTaskFamily}:${argv.ecsBaseTaskVersion}`
+        `Basing next version on version ${argv.ecsTaskFamily}:${argv.ecsBaseTaskVersion}`,
       );
     }
 
@@ -176,13 +174,16 @@ export const command: yargs.CommandModule = {
 
     //  get previous environment
     const taskDefinitionContainerEnvironment =
-      previousContainerDefinition.environment.reduce((acc, cur) => {
-        if (cur.name) {
-          // @ts-ignore
-          acc[cur.name] = cur.value;
-        }
-        return acc;
-      }, {} as Record<string, string>);
+      previousContainerDefinition.environment.reduce(
+        (acc, cur) => {
+          if (cur.name) {
+            // @ts-ignore
+            acc[cur.name] = cur.value;
+          }
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
 
     let version = argv.appVersion;
     if (!version) {
@@ -190,7 +191,7 @@ export const command: yargs.CommandModule = {
         taskDefinitionContainerEnvironment[`${globalPrefix}__version`];
       if (previousVersion) {
         const cleanedVersion = semverClean(
-          previousVersion.replace(/^([^0-9]+)/, "")
+          previousVersion.replace(/^([^0-9]+)/, ""),
         );
         if (!cleanedVersion) {
           logWarning("Version could not be parsed");
@@ -209,7 +210,7 @@ export const command: yargs.CommandModule = {
     // override task container env from config.yaml
     if (argv.config.ecsEnv && typeof argv.config.ecsEnv === "object") {
       for (const [envKey, envValue] of Object.entries(
-        argv.config.ecsEnv as Record<string, string>
+        argv.config.ecsEnv as Record<string, string>,
       )) {
         taskDefinitionContainerEnvironment[envKey] = envValue;
       }
@@ -230,26 +231,29 @@ export const command: yargs.CommandModule = {
       throw new Error(
         `Stage mismatch - tried to deploy to ${
           taskDefinitionContainerEnvironment[`${globalPrefix}__stage`]
-        }`
+        }`,
       );
     }
 
     // get previous secret pointers
     const taskDefinitionContainerSecrets: Record<string, string> =
       previousContainerDefinition.secrets
-        ? previousContainerDefinition.secrets.reduce((acc, cur) => {
-            if (cur.name) {
-              // @ts-ignore
-              acc[cur.name] = cur.valueFrom;
-            }
-            return acc;
-          }, {} as Record<string, string>)
+        ? previousContainerDefinition.secrets.reduce(
+            (acc, cur) => {
+              if (cur.name) {
+                // @ts-ignore
+                acc[cur.name] = cur.valueFrom;
+              }
+              return acc;
+            },
+            {} as Record<string, string>,
+          )
         : {};
 
     // override task container secrets from config.yaml
     if (argv.config.ecsSecrets && typeof argv.config.ecsSecrets === "object") {
       for (const [secretKey, secretFrom] of Object.entries(
-        argv.config.ecsSecrets as Record<string, string>
+        argv.config.ecsSecrets as Record<string, string>,
       )) {
         taskDefinitionContainerSecrets[secretKey] = secretFrom;
       }
@@ -264,13 +268,13 @@ export const command: yargs.CommandModule = {
             ([k, v]) => ({
               name: k,
               value: v,
-            })
+            }),
           ),
           secrets: Object.entries(taskDefinitionContainerSecrets).map(
             ([k, v]) => ({
               name: k,
               valueFrom: v,
-            })
+            }),
           ),
         },
       ],
@@ -288,7 +292,7 @@ export const command: yargs.CommandModule = {
     logBanner("Container Definition Diff");
     printDiff(
       previousContainerDefinition,
-      taskDefinitionRequest?.containerDefinitions?.[0] || {}
+      taskDefinitionRequest?.containerDefinitions?.[0] || {},
     );
 
     logBanner("Update task definition & service");
@@ -338,39 +342,43 @@ export const command: yargs.CommandModule = {
         },
         (message) => {
           switch (message.type) {
-            case "services":
+            case "services": {
               if (
-                !message.services.some((x) =>
-                  x?.deployments?.some(
-                    (d) =>
-                      d.desiredCount !== d.runningCount ||
-                      d.rolloutState !== "COMPLETED"
-                  )
+                !message.services.some(
+                  (x) =>
+                    x?.deployments?.some(
+                      (d) =>
+                        d.desiredCount !== d.runningCount ||
+                        d.rolloutState !== "COMPLETED",
+                    ),
                 )
               ) {
                 logSuccess("Service successfully deployed!");
                 watch.stop();
               }
               break;
-            case "deployment":
+            }
+            case "deployment": {
               const d = message.deployment;
               console.log(
-                `[${chk.yellow(d.taskDefinition?.replace(/^[^\/]+/, ""))} ${
+                `[${chk.yellow(d.taskDefinition?.replace(/^[^/]+/, ""))} ${
                   d.status
                 } Running ${d.runningCount}/${d.desiredCount} Pending ${
                   d.pendingCount
-                } Rollout ${d.rolloutState}`
+                } Rollout ${d.rolloutState}`,
               );
               break;
-            default:
+            }
+            default: {
               console.log(
                 `[${chk.magenta(
-                  message.source
-                )} ${message.createdAt.toISOString()}] ${message.message}`
+                  message.source,
+                )} ${message.createdAt.toISOString()}] ${message.message}`,
               );
               break;
+            }
           }
-        }
+        },
       );
       await watch.promise;
     }

@@ -1,5 +1,5 @@
 import { diffJson } from "diff";
-import { chk } from "node-stage/chalk";
+import { chk } from "./chalk.helper";
 
 export function printDiff(one: object, two: object) {
   for (const { value, added, removed } of diffJson(one, two)) {
@@ -19,13 +19,9 @@ export function printDiff(one: object, two: object) {
             "...",
             text[text.length - 2],
             text[text.length - 1],
-          ].join("\n")
+          ].join("\n"),
         );
       }
     }
   }
 }
-
-export default {
-  printDiff,
-};
