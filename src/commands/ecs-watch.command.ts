@@ -4,6 +4,7 @@
 
 import yargs from "yargs";
 import {
+  getBuilder,
   getYargsOptions,
   loadYargsConfig,
   YargOption,
@@ -13,7 +14,8 @@ import { logNotice } from "../helpers/cli.helper";
 import { chk } from "../helpers/chalk.helper";
 
 import { ecsWatch } from "../helpers/aws.helper";
-import { Config } from "../helpers/config.helper";
+import { loadConfig } from "../helpers/config.helper";
+import { EcsDeployConfig } from "../types/ecs-deploy.dto";
 
 class EcsWatchOptions implements YargsOptions {
   @YargOption({ envAlias: "PWD", demandOption: true })
@@ -22,46 +24,37 @@ class EcsWatchOptions implements YargsOptions {
   @YargOption({ envAlias: "STAGE", demandOption: true })
   stage!: string;
 
-  @YargOption({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
-  ecsClusterName!: string;
-
-  @YargOption({ envAlias: "ECS_SERVICE_NAME" })
-  ecsServiceName!: string;
-
-  @YargOption({ envAlias: "AWS_REGION", demandOption: true })
-  awsRegion!: string;
+  @YargOption({ envAlias: "RELEASE", demandOption: true })
+  release!: string;
 
   @YargOption({ envAlias: "VERBOSE", default: false })
   verbose!: boolean;
 
   @YargOption({ default: 10, describe: "Time in seconds between checks" })
   delay!: number;
-
-  config!: Config;
 }
 
 export const command: yargs.CommandModule = {
   command: "watch",
   describe: "Watch the ECS Service",
-  builder: async (y) => {
-    return y
-      .options(getYargsOptions(EcsWatchOptions))
-      .middleware(async (_argv) => {
-        return (await loadYargsConfig(
-          EcsWatchOptions,
-          _argv as any,
-          "ecsDeploy",
-        )) as any;
-      }, true);
-  },
+  builder: getBuilder(EcsWatchOptions),
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsWatchOptions;
-    logNotice(`Watching ${argv.ecsServiceName}`);
+
+    const config = await loadConfig(
+      EcsDeployConfig,
+      argv.pwd,
+      "ecs-deploy",
+      argv.stage,
+      argv.verbose,
+    );
+
+    logNotice(`Watching ${config.serviceName}`);
     await ecsWatch(
       {
-        region: argv.awsRegion,
-        cluster: argv.ecsClusterName,
-        service: argv.ecsServiceName,
+        region: config.region,
+        cluster: config.clusterName,
+        service: config.serviceName,
       },
       (message) => {
         switch (message.type) {
