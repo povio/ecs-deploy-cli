@@ -12,9 +12,8 @@ await build({
     "@aws-sdk/client-ecr",
     "@aws-sdk/client-ecs",
     "@aws-sdk/client-sts",
-    "@aws-sdk/credential-provider-env",
-    "@aws-sdk/credential-provider-ini",
-    "@aws-sdk/node-config-provider"
+    "@aws-sdk/credential-providers",
+    "@smithy/node-config-provider\n"
   ],
   banner: {
     // hacks to allow commonjs modules to be imported

@@ -38,7 +38,9 @@ export function logInfo(message: string) {
 }
 
 export function logVerbose(message: string) {
-  console.log(`[VERBOSE] ${message}`);
+  if (process.env.VERBOSE) {
+    console.log(`[VERBOSE] ${message}`);
+  }
 }
 
 export function logNotice(message: string) {
@@ -98,18 +100,4 @@ export async function promptVar(
 
 export async function confirm(message: string): Promise<boolean> {
   return (await prompt(message, "yes", {})) === "yes";
-}
-
-export async function getToolEnvironment(argv: {
-  pwd: string;
-  stage?: string;
-}): Promise<Record<string, string>> {
-  const env: Record<string, string> = {
-    nodeVersion: process.version,
-  };
-  const gitCliVersion = await getGitVersion(argv.pwd);
-  if (gitCliVersion) {
-    env.gitCliVersion = gitCliVersion;
-  }
-  return env;
 }

@@ -1,0 +1,48 @@
+accountId: "0000000000"
+region: us-east-1
+taskFamily: myapp-dev
+serviceName: myapp-dev
+clusterName: myapp
+
+# build and upload to ecr with `ecs-deploy build backend --stage dev`
+build:
+  - name: backend
+    repoName: backend
+    #context: ./test
+    #dockerfile: Dockerfile
+    environment:
+      # used at build time
+      BUILD_VAR: value
+
+# deploy to ecs with `ecs-deploy deploy --stage dev`
+taskDefinition:
+  containerDefinitions:
+    - name: backend
+      # name of build above or any other docker path
+      image: backend
+
+      # resolved at task init - avoid using these if possible
+      environment:
+        STAGE: dev
+      secrets:
+        STAGE: arn::ssm/params/myapp-dev
+
+# resolved at runtime using `ecs-deploy config backend --stage dev`
+configs:
+  - name: backend
+    destination: ./.config/dev.backend.yml
+    value:
+      database:
+        user: root
+        # suffix $ evaluates the variable
+        password$: arn:ssm:/properties/myenv-dev/database/password
+
+      # prefix $ evaluates and expands the object on this level
+      # example =>
+      #   arn:ssm:/properties/myenv-dev/database__password
+      #   arn:ssm:/properties/myenv-dev/AUTH_KEY
+      # output =>
+      #   database:
+      #      password: value
+      #   AUTH_KEY: value
+      $: arn:ssm:/properties/myenv-dev

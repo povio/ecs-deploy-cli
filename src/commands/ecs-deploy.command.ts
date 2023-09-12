@@ -7,11 +7,10 @@ import { clean as semverClean, inc as semverInc } from "semver";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
 import {
-  Option,
+  YargOption,
   YargsOptions,
   loadYargsConfig,
   getYargsOptions,
-  Config,
 } from "../helpers/yargs.helper";
 import {
   logBanner,
@@ -33,23 +32,23 @@ import {
   ecsUpdateService,
   ecsWatch,
 } from "../helpers/aws.helper";
-import { printDiff } from "../helpers/diff.helper";
 import { ReleaseStrategy } from "../helpers/config.types";
+import { Config } from "../helpers/config.helper";
 
 class EcsDeployOptions implements YargsOptions {
-  @Option({ envAlias: "PWD", demandOption: true })
+  @YargOption({ envAlias: "PWD", demandOption: true })
   pwd!: string;
 
-  @Option({ envAlias: "STAGE", demandOption: true })
+  @YargOption({ envAlias: "STAGE", demandOption: true })
   stage!: string;
 
-  @Option({ envAlias: "SERVICE" })
+  @YargOption({ envAlias: "SERVICE" })
   service!: string;
 
-  @Option({ envAlias: "RELEASE", demandOption: true })
+  @YargOption({ envAlias: "RELEASE", demandOption: true })
   release!: string;
 
-  @Option({
+  @YargOption({
     envAlias: "RELEASE_STRATEGY",
     default: "gitsha",
     choices: ["gitsha", "gitsha-stage"],
@@ -57,37 +56,37 @@ class EcsDeployOptions implements YargsOptions {
   })
   releaseStrategy!: ReleaseStrategy;
 
-  @Option({ envAlias: "AWS_REPO_NAME", demandOption: true })
+  @YargOption({ envAlias: "AWS_REPO_NAME", demandOption: true })
   ecrRepoName!: string;
 
-  @Option({ envAlias: "ECS_TASK_FAMILY", demandOption: true })
+  @YargOption({ envAlias: "ECS_TASK_FAMILY", demandOption: true })
   ecsTaskFamily!: string;
 
-  @Option({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
+  @YargOption({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
   ecsClusterName!: string;
 
-  @Option({ envAlias: "ECS_SERVICE_NAME", demandOption: true })
+  @YargOption({ envAlias: "ECS_SERVICE_NAME", demandOption: true })
   ecsServiceName!: string;
 
-  @Option({ envAlias: "AWS_REGION", demandOption: true })
+  @YargOption({ envAlias: "AWS_REGION", demandOption: true })
   awsRegion!: string;
 
-  @Option({ envAlias: "AWS_ACCOUNT_ID", demandOption: true })
+  @YargOption({ envAlias: "AWS_ACCOUNT_ID", demandOption: true })
   awsAccountId!: string;
 
-  @Option({ envAlias: "CI" })
+  @YargOption({ envAlias: "CI" })
   ci!: boolean;
 
-  @Option({ envAlias: "SKIP_ECR_EXISTS_CHECK" })
+  @YargOption({ envAlias: "SKIP_ECR_EXISTS_CHECK" })
   skipEcrExistsCheck!: boolean;
 
-  @Option({ envAlias: "VERBOSE", default: false })
+  @YargOption({ envAlias: "VERBOSE", default: false })
   verbose!: boolean;
 
-  @Option({ envAlias: "VERSION", type: "string", alias: "ecsVersion" })
+  @YargOption({ envAlias: "VERSION", type: "string", alias: "ecsVersion" })
   appVersion!: string;
 
-  @Option({
+  @YargOption({
     type: "string",
     describe: "The version to base the next revision on",
   })
@@ -289,11 +288,11 @@ export const command: yargs.CommandModule = {
       memory: previousTaskDefinition.memory,
     };
 
-    logBanner("Container Definition Diff");
-    printDiff(
-      previousContainerDefinition,
-      taskDefinitionRequest?.containerDefinitions?.[0] || {},
-    );
+    // logBanner("Container Definition Diff");
+    //printDiff(
+    //  previousContainerDefinition,
+    //  taskDefinitionRequest?.containerDefinitions?.[0] || {},
+    //);
 
     logBanner("Update task definition & service");
 
@@ -317,8 +316,8 @@ export const command: yargs.CommandModule = {
       throw new Error("Task could not be registered.");
     }
 
-    logBanner("Task Definition Diff");
-    printDiff(taskDefinition, previousTaskDefinition);
+    //logBanner("Task Definition Diff");
+    //printDiff(taskDefinition, previousTaskDefinition);
 
     logInfo(`Updating service task to revision ${taskDefinition.revision}...`);
 

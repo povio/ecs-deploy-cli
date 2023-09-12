@@ -2,21 +2,15 @@ import "reflect-metadata";
 import type { Options } from "yargs";
 import path from "path";
 
-import type { ReleaseStrategy } from "./config.types";
-import { loadConfig, Config } from "./config.helper";
-import { getRelease } from "./git.helper";
+import { getSha } from "./git.helper";
 
 interface IOptionProperties extends Options {
   envAlias?: string;
-  envAliases?: string[];
-  configAlias?: (c: Config) => any;
 }
 
 const optionsKey = Symbol("options_key");
 
-export { Config } from "./config.helper";
-
-export function Option(properties: IOptionProperties) {
+export function YargOption(properties: IOptionProperties) {
   return (target: object, propertyKey: string) => {
     if (properties !== undefined && properties !== null) {
       const newMetadata = {
@@ -32,7 +26,7 @@ export function Option(properties: IOptionProperties) {
               "design:type",
               target,
               propertyKey,
-            ).name.toLowerCase(),
+            )?.name?.toLowerCase(),
         },
       };
 
@@ -51,16 +45,21 @@ export function getYargsOption<T>(
   return options;
 }
 
+export function getBuilder(options) {
+  return async (y) => {
+    return y.options(getYargsOptions(options)).middleware(async (_argv) => {
+      return (await loadYargsConfig(options, _argv as any)) as any;
+    }, true);
+  };
+}
+
 export function getYargsOptions<T>(target: any): Record<keyof T, Options> {
   return Object.entries(getYargsOption(target)).reduce(
     (a, [property, options]) => {
       // @ts-ignore
       a[property] = Object.fromEntries(
         Object.entries(options).filter(
-          ([optionName, optionValue]) =>
-            !["envAlias", "envAliases", "configAlias", "default"].includes(
-              optionName,
-            ),
+          ([optionName]) => !["envAlias", "default"].includes(optionName),
         ),
       );
       return a;
@@ -70,19 +69,13 @@ export function getYargsOptions<T>(target: any): Record<keyof T, Options> {
 }
 
 export interface YargsOptions {
-  stage: string;
-  service?: string;
   pwd: string;
-  config: Config;
-
-  release?: string;
-  releaseStrategy?: ReleaseStrategy;
+  release: string;
 }
 
 export async function loadYargsConfig<T extends YargsOptions>(
   cls: new () => T,
   _argv: Record<string, unknown>,
-  configDefaultBase?: string,
 ): Promise<T> {
   const argv: T = new cls();
 
@@ -91,56 +84,26 @@ export async function loadYargsConfig<T extends YargsOptions>(
   );
   if (!argv.pwd) throw new Error("No PWD given");
 
-  let config;
-  if (_argv.service) {
-    argv.service = _argv.service as string;
-    config = loadConfig(argv.pwd, _argv.stage as string, {
-      service: argv.service,
-    });
-  } else {
-    config = loadConfig(argv.pwd, _argv.stage as string);
+  if (!argv.release) {
+    argv.release =
+      process.env.RELEASE ||
+      process.env.RELEASE_SHA ||
+      (await getSha(argv.pwd));
   }
 
-  argv.stage = config.stage;
-
   for (const [name, o] of Object.entries(getYargsOption(cls))) {
-    if (["pwd", "stage", "config"].includes(name)) {
+    if (["pwd", "release"].includes(name)) {
       continue;
     }
 
     argv[name as keyof typeof argv] =
       // yargs is always right
-      _argv[name] ||
-      // default to config if set
-      (configDefaultBase && config[configDefaultBase]?.[name]) ||
-      // fallback to env
-      (o.envAlias && process.env[o.envAlias]);
-
-    // write alias back into process.env
-    if (
-      o.envAlias &&
-      (process.env[o.envAlias] as any) !==
-        (argv[name as keyof typeof argv] as any)
-    ) {
-      if (process.env[o.envAlias] !== undefined) {
-        console.warn(`Overwriting ${o.envAlias}!`);
-      }
-      process.env[o.envAlias] = argv[name as keyof typeof argv] as any;
-    }
-
-    // fallback to default
-    if (argv[name as keyof typeof argv] === undefined && o.default) {
-      // use default from yargs
-      argv[name as keyof typeof argv] = o.default;
-    }
+      (_argv[name] ||
+        // fallback to env
+        (o.envAlias && process.env[o.envAlias])) ??
+      // fallback to default
+      o.default;
   }
-
-  argv.release =
-    config.release ||
-    process.env.RELEASE ||
-    (await getRelease(argv.pwd, argv.releaseStrategy));
-
-  argv.config = config;
 
   return argv;
 }

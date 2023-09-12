@@ -4,37 +4,37 @@
 
 import yargs from "yargs";
 import {
-  Config,
   getYargsOptions,
   loadYargsConfig,
-  Option,
+  YargOption,
   YargsOptions,
 } from "../helpers/yargs.helper";
 import { logNotice } from "../helpers/cli.helper";
 import { chk } from "../helpers/chalk.helper";
 
 import { ecsWatch } from "../helpers/aws.helper";
+import { Config } from "../helpers/config.helper";
 
 class EcsWatchOptions implements YargsOptions {
-  @Option({ envAlias: "PWD", demandOption: true })
+  @YargOption({ envAlias: "PWD", demandOption: true })
   pwd!: string;
 
-  @Option({ envAlias: "STAGE", demandOption: true })
+  @YargOption({ envAlias: "STAGE", demandOption: true })
   stage!: string;
 
-  @Option({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
+  @YargOption({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
   ecsClusterName!: string;
 
-  @Option({ envAlias: "ECS_SERVICE_NAME" })
+  @YargOption({ envAlias: "ECS_SERVICE_NAME" })
   ecsServiceName!: string;
 
-  @Option({ envAlias: "AWS_REGION", demandOption: true })
+  @YargOption({ envAlias: "AWS_REGION", demandOption: true })
   awsRegion!: string;
 
-  @Option({ envAlias: "VERBOSE", default: false })
+  @YargOption({ envAlias: "VERBOSE", default: false })
   verbose!: boolean;
 
-  @Option({ default: 10, describe: "Time in seconds between checks" })
+  @YargOption({ default: 10, describe: "Time in seconds between checks" })
   delay!: number;
 
   config!: Config;
@@ -65,16 +65,17 @@ export const command: yargs.CommandModule = {
       },
       (message) => {
         switch (message.type) {
-          case "deployment":
+          case "deployment": {
             const d = message.deployment;
             console.log(
-              `[${chk.yellow(d.taskDefinition?.replace(/^[^\/]+/, ""))} ${
+              `[${chk.yellow(d.taskDefinition?.replace(/^[^/]+/, ""))} ${
                 d.status
               } Running ${d.runningCount}/${d.desiredCount} Pending ${
                 d.pendingCount
               } Rollout ${d.rolloutState}`,
             );
             break;
+          }
           case "message":
             console.log(
               `[${chk.magenta(

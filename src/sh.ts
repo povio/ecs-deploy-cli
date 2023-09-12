@@ -11,7 +11,7 @@ import { getVersion } from "./helpers/version.helper";
 
 yargs(hideBin(process.argv))
   .version(getVersion() || "unknown")
-  .scriptName("ecs-deploy-cli")
+  .scriptName("ecs-deploy")
   .command(buildCommand)
   .command(deployCommand)
   .command(watchCommand)
@@ -19,7 +19,7 @@ yargs(hideBin(process.argv))
   .demandCommand(1)
   .strictCommands(true)
   .showHelpOnFail(true)
-  .fail((msg, err, yargs) => {
+  .fail((msg, err) => {
     if (msg) logError(msg);
     if (err) {
       if (process.env.VERBOSE) {

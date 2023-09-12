@@ -15,21 +15,22 @@ import {
   ImageIdentifier,
   ImageDetail,
 } from "@aws-sdk/client-ecr";
-import { fromIni } from "@aws-sdk/credential-provider-ini";
-import { fromEnv } from "@aws-sdk/credential-provider-env";
+import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
 import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
 import { logVerbose } from "./cli.helper";
 
-function getCredentials() {
-  if (process.env.AWS_PROFILE) {
-    return fromIni();
-  }
-  return fromEnv();
+function getCredentials(options: { region: string }) {
+  return fromNodeProviderChain({
+    //...any input of fromEnv(), fromSSO(), fromTokenFile(), fromIni(),
+    // fromProcess(), fromInstanceMetadata(), fromContainerMetadata()
+    // Optional. Custom STS client configurations overriding the default ones.
+    clientConfig: { region: options.region },
+  });
 }
 
 export async function getAwsIdentity(options: { region: string }) {
   const stsClient = new STSClient({
-    credentials: getCredentials(),
+    credentials: getCredentials(options),
     region: options.region,
   });
   return await stsClient.send(new GetCallerIdentityCommand({}));
@@ -37,7 +38,7 @@ export async function getAwsIdentity(options: { region: string }) {
 
 function getEcrInstance(options: { region: string }) {
   return new ECRClient({
-    credentials: getCredentials(),
+    credentials: getCredentials(options),
     region: options.region,
   });
 }
@@ -55,10 +56,7 @@ export async function ecrImageExists(options: {
         imageIds: options.imageIds,
       }),
     );
-
-    if (process.env.VERBOSE) {
-      logVerbose(JSON.stringify(images.imageDetails));
-    }
+    logVerbose(JSON.stringify(images.imageDetails));
   } catch (e: any) {
     if (e?.name === "ImageNotFoundException") {
       return false;
@@ -119,7 +117,7 @@ export async function ecrGetDockerCredentials(options: { region: string }) {
 
 function getECSInstance(options: { region: string }) {
   return new ECSClient({
-    credentials: getCredentials(),
+    credentials: getCredentials(options),
     region: options.region,
   });
 }
@@ -136,9 +134,7 @@ export async function ecsGetCurrentTaskDefinition(options: {
       }),
     )
   ).taskDefinition;
-  if (process.env.VERBOSE) {
-    logVerbose(JSON.stringify(taskDefinition));
-  }
+  logVerbose(JSON.stringify(taskDefinition));
   return taskDefinition;
 }
 
@@ -152,9 +148,7 @@ export async function ecsRegisterTaskDefinition(options: {
       new RegisterTaskDefinitionCommand(options.taskDefinitionRequest),
     )
   ).taskDefinition;
-  if (process.env.VERBOSE) {
-    logVerbose(JSON.stringify(taskDefinition));
-  }
+  logVerbose(JSON.stringify(taskDefinition));
   return taskDefinition;
 }
 
@@ -174,9 +168,7 @@ export async function ecsUpdateService(options: {
       }),
     )
   ).service;
-  if (process.env.VERBOSE) {
-    logVerbose(JSON.stringify(service));
-  }
+  logVerbose(JSON.stringify(service));
   return service;
 }
 
