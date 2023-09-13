@@ -2,7 +2,7 @@
   "name": "ecs-deploy-cli",
   "version": "4.0.0",
   "packageManager": "yarn@3.6.3",
-  "bin": "./dist/sh.mjs",
+  "bin": "./dist/sh.js",
   "scripts": {
     "start": "tsx ./src/sh.ts",
     "test": "tsx --test ./src/*.test.ts",

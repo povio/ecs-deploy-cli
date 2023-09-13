@@ -5,9 +5,8 @@ await build({
   bundle: true,
   sourcemap: false,
   platform: "node",
-
   minify: true,
-  metafile: true,
+  metafile: false,
   format: "cjs",
   banner: {
     // hacks to allow commonjs modules to be imported
