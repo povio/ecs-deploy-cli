@@ -9,11 +9,12 @@ await build({
   format: "esm",
   // latest supported by AWS Lambda
   external: [
+    "@aws-sdk/client-ssm",
     "@aws-sdk/client-ecr",
     "@aws-sdk/client-ecs",
     "@aws-sdk/client-sts",
     "@aws-sdk/credential-providers",
-    "@smithy/node-config-provider\n"
+    "@smithy/node-config-provider"
   ],
   banner: {
     // hacks to allow commonjs modules to be imported

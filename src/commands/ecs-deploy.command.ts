@@ -3,23 +3,16 @@
  */
 
 import yargs from "yargs";
-import { clean as semverClean, inc as semverInc } from "semver";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
-import {
-  YargOption,
-  YargsOptions,
-  loadYargsConfig,
-  getYargsOptions,
-} from "../helpers/yargs.helper";
+import { YargOption, YargsOptions, getBuilder } from "../helpers/yargs.helper";
 import {
   logBanner,
-  getToolEnvironment,
   logVariable,
   logInfo,
-  logWarning,
   logNotice,
   logSuccess,
+  confirm,
 } from "../helpers/cli.helper";
 import { chk } from "../helpers/chalk.helper";
 
@@ -27,13 +20,15 @@ import { getVersion } from "../helpers/version.helper";
 
 import {
   ecrImageExists,
-  ecsGetCurrentTaskDefinition,
   ecsRegisterTaskDefinition,
   ecsUpdateService,
   ecsWatch,
+  getSSMParameter,
+  resolveSecretPath,
 } from "../helpers/aws.helper";
-import { ReleaseStrategy } from "../helpers/config.types";
-import { Config } from "../helpers/config.helper";
+import { loadConfig } from "../helpers/config.helper";
+import { EcsDeployConfig } from "../types/ecs-deploy.dto";
+import { printDiff } from "../helpers/diff.helper";
 
 class EcsDeployOptions implements YargsOptions {
   @YargOption({ envAlias: "PWD", demandOption: true })
@@ -42,37 +37,8 @@ class EcsDeployOptions implements YargsOptions {
   @YargOption({ envAlias: "STAGE", demandOption: true })
   stage!: string;
 
-  @YargOption({ envAlias: "SERVICE" })
-  service!: string;
-
   @YargOption({ envAlias: "RELEASE", demandOption: true })
   release!: string;
-
-  @YargOption({
-    envAlias: "RELEASE_STRATEGY",
-    default: "gitsha",
-    choices: ["gitsha", "gitsha-stage"],
-    type: "string",
-  })
-  releaseStrategy!: ReleaseStrategy;
-
-  @YargOption({ envAlias: "AWS_REPO_NAME", demandOption: true })
-  ecrRepoName!: string;
-
-  @YargOption({ envAlias: "ECS_TASK_FAMILY", demandOption: true })
-  ecsTaskFamily!: string;
-
-  @YargOption({ envAlias: "ECS_CLUSTER_NAME", demandOption: true })
-  ecsClusterName!: string;
-
-  @YargOption({ envAlias: "ECS_SERVICE_NAME", demandOption: true })
-  ecsServiceName!: string;
-
-  @YargOption({ envAlias: "AWS_REGION", demandOption: true })
-  awsRegion!: string;
-
-  @YargOption({ envAlias: "AWS_ACCOUNT_ID", demandOption: true })
-  awsAccountId!: string;
 
   @YargOption({ envAlias: "CI" })
   ci!: boolean;
@@ -85,214 +51,163 @@ class EcsDeployOptions implements YargsOptions {
 
   @YargOption({ envAlias: "VERSION", type: "string", alias: "ecsVersion" })
   appVersion!: string;
-
-  @YargOption({
-    type: "string",
-    describe: "The version to base the next revision on",
-  })
-  ecsBaseTaskVersion!: string;
-
-  config!: Config;
 }
 
 export const command: yargs.CommandModule = {
   command: "deploy",
   describe: "Deploy the ECR Image to ECS",
-  builder: async (y) => {
-    return y
-      .options(getYargsOptions(EcsDeployOptions))
-      .middleware(async (_argv) => {
-        return (await loadYargsConfig(
-          EcsDeployOptions,
-          _argv as any,
-          "ecsDeploy",
-        )) as any;
-      }, true);
-  },
+  builder: getBuilder(EcsDeployOptions),
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsDeployOptions;
 
-    logBanner(`EcsBuild ${getVersion()}`);
+    logBanner(`EcsDeploy ${getVersion()}`);
+    logInfo(`NodeJS Version: ${process.version}`);
 
-    for (const [k, v] of Object.entries(await getToolEnvironment(argv))) {
-      logVariable(k, v);
-    }
+    const config = await loadConfig(
+      EcsDeployConfig,
+      argv.pwd,
+      "ecs-deploy",
+      argv.stage,
+      argv.verbose,
+    );
+    logVariable("pwd", argv.pwd);
+    logVariable("release", argv.release);
+    logVariable("version", argv.appVersion);
+    logVariable("stage", argv.stage);
 
     logBanner("Deploy Environment");
+    logVariable("accountId", config.accountId);
+    logVariable("region", config.region);
+    logVariable("taskFamily", config.taskFamily);
+    logVariable("clusterName", config.clusterName);
+    logVariable("serviceName", config.serviceName);
 
-    logVariable("ecrRepoName", argv.ecrRepoName);
-    logVariable("ecsTaskFamily", argv.ecsTaskFamily);
-    logVariable("ecsClusterName", argv.ecsClusterName);
-    logVariable("ecsServiceName", argv.ecsServiceName);
+    logBanner("Fetching template");
+    logVariable("taskDefinition__template", config.taskDefinition.template);
 
-    // load ECR details
-    const imageName = `${argv.awsAccountId}.dkr.ecr.${argv.awsRegion}.amazonaws.com/${argv.ecrRepoName}:${argv.release}`;
+    const template = JSON.parse(
+      await getSSMParameter({
+        region: config.region,
+        name: config.taskDefinition.template,
+      }),
+    );
 
-    logInfo(`Image name: ${imageName}`);
+    const tdRequest: RegisterTaskDefinitionCommandInput = JSON.parse(
+      JSON.stringify(template),
+    );
 
-    if (!argv.skipEcrExistsCheck) {
-      if (
-        !(await ecrImageExists({
-          region: argv.awsRegion,
-          repositoryName: argv.ecrRepoName,
-          imageIds: [{ imageTag: argv.release }],
-        }))
-      ) {
-        throw new Error("ECR image does not exist");
-      }
-    }
+    const version = argv.appVersion;
 
-    logInfo("Getting latest task definition..");
+    for (const configContainer of config.taskDefinition.containerDefinitions) {
+      logBanner(`Container ${configContainer.name}`);
 
-    if (argv.ecsBaseTaskVersion) {
-      logNotice(
-        `Basing next version on version ${argv.ecsTaskFamily}:${argv.ecsBaseTaskVersion}`,
+      const templateContainer = tdRequest.containerDefinitions?.find(
+        (x: any) => x.name === configContainer.name,
       );
-    }
 
-    const previousTaskDefinition = await ecsGetCurrentTaskDefinition({
-      region: argv.awsRegion,
-      taskDefinition: argv.ecsBaseTaskVersion
-        ? `${argv.ecsTaskFamily}:${argv.ecsBaseTaskVersion}`
-        : argv.ecsTaskFamily,
-    });
+      if (!templateContainer) {
+        throw new Error(
+          `Container ${configContainer.name} not found in template`,
+        );
+      }
 
-    if (previousTaskDefinition?.containerDefinitions?.length != 1) {
-      // this could be handled somehow
-      throw new Error("Task definition contains none or more than 1 tasks");
-    }
+      if (configContainer.image) {
+        const buildContainer = config.build.find(
+          (x) => x.name === configContainer.image,
+        );
+        if (buildContainer) {
+          // if container image is found in the build config, we have the image - match the release
+          templateContainer.image = `${config.accountId}.dkr.ecr.${config.region}.amazonaws.com/${buildContainer.repoName}:${argv.release}`;
+          logInfo(`Using build image ${templateContainer.image}`);
 
-    const previousContainerDefinition =
-      previousTaskDefinition.containerDefinitions[0];
-
-    const globalPrefix = process.env.CONFIG_PREFIX || "app";
-
-    if (!previousContainerDefinition.environment) {
-      throw new Error("Task definition missing environment");
-    }
-
-    //  get previous environment
-    const taskDefinitionContainerEnvironment =
-      previousContainerDefinition.environment.reduce(
-        (acc, cur) => {
-          if (cur.name) {
-            // @ts-ignore
-            acc[cur.name] = cur.value;
+          // load ECR details
+          if (!argv.skipEcrExistsCheck) {
+            if (
+              !(await ecrImageExists({
+                region: config.region,
+                repositoryName: buildContainer.repoName,
+                imageIds: [{ imageTag: argv.release }],
+              }))
+            ) {
+              throw new Error("ECR image does not exist");
+            }
           }
+        } else {
+          // third party image ?
+          templateContainer.image = configContainer.image;
+          logNotice(`Using external image ${templateContainer.image}`);
+        }
+      }
+
+      const envDict: Record<string, any> = {};
+      if (templateContainer.environment) {
+        for (const env of templateContainer.environment) {
+          if (env.name && env.value) {
+            envDict[env.name] = env.value;
+          }
+        }
+      }
+      if (configContainer.environment) {
+        for (const [name, valueFrom] of Object.entries(
+          configContainer.environment,
+        )) {
+          envDict[name] = valueFrom;
+        }
+      }
+
+      if (envDict.STAGE && envDict.STAGE !== argv.stage) {
+        throw new Error(`Stage mismatch - tried to deploy to ${envDict.STAGE}`);
+      }
+      envDict.STAGE = argv.stage;
+      envDict.VERSION = version;
+
+      templateContainer.environment = Object.entries(envDict).reduce(
+        (acc, [name, value]) => {
+          acc.push({ name, value });
           return acc;
         },
-        {} as Record<string, string>,
+        [] as { name: string; value: string }[],
       );
 
-    let version = argv.appVersion;
-    if (!version) {
-      const previousVersion =
-        taskDefinitionContainerEnvironment[`${globalPrefix}__version`];
-      if (previousVersion) {
-        const cleanedVersion = semverClean(
-          previousVersion.replace(/^([^0-9]+)/, ""),
-        );
-        if (!cleanedVersion) {
-          logWarning("Version could not be parsed");
-        } else {
-          // make the version ${stage}-0.0.1
-          version = `${argv.stage}-${semverInc(cleanedVersion, "patch")}`;
-          logInfo("Incrementing version");
+      const secretsDict: Record<string, any> = {};
+      if (templateContainer.secrets) {
+        for (const secret of templateContainer.secrets) {
+          if (secret.name && secret.valueFrom) {
+            secretsDict[secret.name] = secret.valueFrom;
+          }
         }
-      } else {
-        logNotice("No version provided");
       }
-    } else {
-      logVariable(`${globalPrefix}__version`, version);
-    }
-
-    // override task container env from config.yaml
-    if (argv.config.ecsEnv && typeof argv.config.ecsEnv === "object") {
-      for (const [envKey, envValue] of Object.entries(
-        argv.config.ecsEnv as Record<string, string>,
-      )) {
-        taskDefinitionContainerEnvironment[envKey] = envValue;
+      if (configContainer.secrets) {
+        for (const [name, valueFrom] of Object.entries(
+          configContainer.secrets,
+        )) {
+          secretsDict[name] = valueFrom;
+        }
       }
-    }
-
-    // override version
-    if (version) {
-      taskDefinitionContainerEnvironment[`${globalPrefix}__version`] = version;
-    }
-
-    // check/set stage
-    if (!taskDefinitionContainerEnvironment[`${globalPrefix}__stage`]) {
-      taskDefinitionContainerEnvironment[`${globalPrefix}__stage`] = argv.stage;
-    } else if (
-      taskDefinitionContainerEnvironment[`${globalPrefix}__stage`] !==
-      argv.stage
-    ) {
-      throw new Error(
-        `Stage mismatch - tried to deploy to ${
-          taskDefinitionContainerEnvironment[`${globalPrefix}__stage`]
-        }`,
+      templateContainer.secrets = Object.entries(secretsDict).reduce(
+        (acc, [name, valueFrom]) => {
+          acc.push({
+            name,
+            valueFrom: resolveSecretPath({
+              arn: valueFrom,
+              accountId: config.accountId,
+              region: config.region,
+            }),
+          });
+          return acc;
+        },
+        [] as { name: string; valueFrom: string }[],
       );
     }
 
-    // get previous secret pointers
-    const taskDefinitionContainerSecrets: Record<string, string> =
-      previousContainerDefinition.secrets
-        ? previousContainerDefinition.secrets.reduce(
-            (acc, cur) => {
-              if (cur.name) {
-                // @ts-ignore
-                acc[cur.name] = cur.valueFrom;
-              }
-              return acc;
-            },
-            {} as Record<string, string>,
-          )
-        : {};
-
-    // override task container secrets from config.yaml
-    if (argv.config.ecsSecrets && typeof argv.config.ecsSecrets === "object") {
-      for (const [secretKey, secretFrom] of Object.entries(
-        argv.config.ecsSecrets as Record<string, string>,
-      )) {
-        taskDefinitionContainerSecrets[secretKey] = secretFrom;
-      }
+    if (argv.verbose) {
+      logBanner("Task Definition");
+      console.log(JSON.stringify(tdRequest, null, 2));
     }
 
-    const taskDefinitionRequest: RegisterTaskDefinitionCommandInput = {
-      containerDefinitions: [
-        {
-          ...previousContainerDefinition,
-          image: imageName,
-          environment: Object.entries(taskDefinitionContainerEnvironment).map(
-            ([k, v]) => ({
-              name: k,
-              value: v,
-            }),
-          ),
-          secrets: Object.entries(taskDefinitionContainerSecrets).map(
-            ([k, v]) => ({
-              name: k,
-              valueFrom: v,
-            }),
-          ),
-        },
-      ],
-      family: previousTaskDefinition.family,
-      taskRoleArn: previousTaskDefinition.taskRoleArn,
-      executionRoleArn: previousTaskDefinition.executionRoleArn,
-      networkMode: previousTaskDefinition.networkMode,
-      volumes: previousTaskDefinition.volumes,
-      placementConstraints: previousTaskDefinition.placementConstraints,
-      requiresCompatibilities: previousTaskDefinition.requiresCompatibilities,
-      cpu: previousTaskDefinition.cpu,
-      memory: previousTaskDefinition.memory,
-    };
+    logBanner("Task Definition Diff");
 
-    // logBanner("Container Definition Diff");
-    //printDiff(
-    //  previousContainerDefinition,
-    //  taskDefinitionRequest?.containerDefinitions?.[0] || {},
-    //);
+    printDiff(template, tdRequest);
 
     logBanner("Update task definition & service");
 
@@ -305,27 +220,26 @@ export const command: yargs.CommandModule = {
 
     logInfo("Creating new task..");
 
-    const taskDefinition = await ecsRegisterTaskDefinition({
-      region: argv.awsRegion,
-      taskDefinitionRequest,
+    const newTaskDefinition = await ecsRegisterTaskDefinition({
+      region: config.region,
+      taskDefinitionRequest: tdRequest,
     });
 
-    if (!taskDefinition || !taskDefinition.taskDefinitionArn) {
-      console.log({ taskDefinition: JSON.stringify(taskDefinition) });
+    if (!newTaskDefinition || !newTaskDefinition.taskDefinitionArn) {
+      console.log({ taskDefinition: JSON.stringify(newTaskDefinition) });
       // this can't really happen, the call above should error out
       throw new Error("Task could not be registered.");
     }
 
-    //logBanner("Task Definition Diff");
-    //printDiff(taskDefinition, previousTaskDefinition);
-
-    logInfo(`Updating service task to revision ${taskDefinition.revision}...`);
+    logInfo(
+      `Updating service task to revision ${newTaskDefinition.revision}...`,
+    );
 
     await ecsUpdateService({
-      region: argv.awsRegion,
-      service: argv.ecsServiceName,
-      cluster: argv.ecsClusterName,
-      taskDefinition: taskDefinition.taskDefinitionArn,
+      region: config.region,
+      service: config.serviceName,
+      cluster: config.clusterName,
+      taskDefinition: newTaskDefinition.taskDefinitionArn,
     });
 
     if (!argv.ci) {
@@ -335,9 +249,9 @@ export const command: yargs.CommandModule = {
 
       const watch = ecsWatch(
         {
-          region: argv.awsRegion,
-          cluster: argv.ecsClusterName,
-          service: argv.ecsServiceName,
+          region: config.region,
+          service: config.serviceName,
+          cluster: config.clusterName,
         },
         (message) => {
           switch (message.type) {

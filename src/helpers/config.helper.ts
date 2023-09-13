@@ -49,3 +49,8 @@ export async function loadConfig<T extends z.ZodType<any, any, any>>(
   }
   return result.data;
 }
+
+
+export async function resolveConfigValue(value: any) {
+
+}

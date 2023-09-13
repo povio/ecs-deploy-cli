@@ -17,6 +17,7 @@ export const EcsDeployConfig = z.object({
     }),
   ),
   taskDefinition: z.object({
+    template: z.string(),
     containerDefinitions: z.array(
       z.object({
         name: z.string(),
