@@ -29,16 +29,14 @@
   "contributors": [
     "Marko Zabreznik <marko.zabreznik@povio.com>"
   ],
-  "dependencies": {
+  "devDependencies": {
     "@aws-sdk/client-ecr": "3.408.0",
     "@aws-sdk/client-ecs": "3.408.0",
     "@aws-sdk/client-ssm": "3.408.0",
     "@aws-sdk/client-sts": "3.408.0",
     "@aws-sdk/credential-providers": "^3.408.0",
-    "@smithy/node-config-provider": "^2.0.9"
-  },
-  "devDependencies": {
     "@aws-sdk/types": "3.408.0",
+    "@smithy/node-config-provider": "^2.0.9",
     "@types/diff": "^5.0.3",
     "@types/node": "^20.5.9",
     "@types/prettier": "^3.0.0",
