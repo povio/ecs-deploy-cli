@@ -27,11 +27,13 @@ export const EcsDeployConfig = z.object({
       }),
     ),
   }),
-  configs: z.array(
-    z.object({
-      name: z.string(),
-      destination: z.string(),
-      values: z.any(),
-    }),
-  ),
+  configs: z
+    .array(
+      z.object({
+        name: z.string(),
+        destination: z.string(),
+        values: z.any(),
+      }),
+    )
+    .optional(),
 });
