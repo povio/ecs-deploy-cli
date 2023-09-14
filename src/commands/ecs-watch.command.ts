@@ -3,19 +3,13 @@
  */
 
 import yargs from "yargs";
-import {
-  getBuilder,
-  getYargsOptions,
-  loadYargsConfig,
-  YargOption,
-  YargsOptions,
-} from "../helpers/yargs.helper";
+import { getBuilder, YargOption, YargsOptions } from "../helpers/yargs.helper";
 import { logNotice } from "../helpers/cli.helper";
 import { chk } from "../helpers/chalk.helper";
 
 import { ecsWatch } from "../helpers/aws.helper";
 import { loadConfig } from "../helpers/config.helper";
-import { EcsDeployConfig } from "../types/ecs-deploy.dto";
+import { DeployConfig } from "../types/ecs-deploy.dto";
 
 class EcsWatchOptions implements YargsOptions {
   @YargOption({ envAlias: "PWD", demandOption: true })
@@ -42,9 +36,8 @@ export const command: yargs.CommandModule = {
     const argv = (await _argv) as unknown as EcsWatchOptions;
 
     const config = await loadConfig(
-      EcsDeployConfig,
+      DeployConfig,
       argv.pwd,
-      "ecs-deploy",
       argv.stage,
       argv.verbose,
     );

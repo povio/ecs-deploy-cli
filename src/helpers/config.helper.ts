@@ -16,9 +16,9 @@ import { z } from "zod";
 export async function loadConfig<T extends z.ZodType<any, any, any>>(
   type: T,
   cwd: string,
-  moduleName: string,
   stage: string,
   verbose: boolean,
+  moduleName: string = "ecs-deploy",
 ): Promise<z.output<T>> {
   let config = {};
   for (const name of [stage, `${stage}.local`]) {
@@ -50,7 +50,4 @@ export async function loadConfig<T extends z.ZodType<any, any, any>>(
   return result.data;
 }
 
-
-export async function resolveConfigValue(value: any) {
-
-}
+export async function resolveConfigValue(value: any) {}

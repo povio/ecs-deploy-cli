@@ -28,7 +28,7 @@ import {
 } from "../helpers/aws.helper";
 import { Docker } from "../helpers/docker.helper";
 import { loadConfig } from "../helpers/config.helper";
-import { EcsDeployConfig } from "../types/ecs-deploy.dto";
+import { BuildConfig } from "../types/ecs-deploy.dto";
 
 class EcrBuildOptions implements YargsOptions {
   @YargOption({ demandOption: true })
@@ -103,9 +103,8 @@ export const command: yargs.CommandModule = {
     logVariable("stage", argv.stage);
 
     const config = await loadConfig(
-      EcsDeployConfig,
+      BuildConfig,
       argv.pwd,
-      "ecs-deploy",
       argv.stage,
       argv.verbose,
     );

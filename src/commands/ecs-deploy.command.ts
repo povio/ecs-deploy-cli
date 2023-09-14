@@ -27,7 +27,7 @@ import {
   resolveSecretPath,
 } from "../helpers/aws.helper";
 import { loadConfig } from "../helpers/config.helper";
-import { EcsDeployConfig } from "../types/ecs-deploy.dto";
+import { DeployConfig } from "../types/ecs-deploy.dto";
 import { printDiff } from "../helpers/diff.helper";
 
 class EcsDeployOptions implements YargsOptions {
@@ -64,9 +64,8 @@ export const command: yargs.CommandModule = {
     logInfo(`NodeJS Version: ${process.version}`);
 
     const config = await loadConfig(
-      EcsDeployConfig,
+      DeployConfig,
       argv.pwd,
-      "ecs-deploy",
       argv.stage,
       argv.verbose,
     );

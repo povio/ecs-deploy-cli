@@ -1,11 +1,23 @@
 import { z } from "zod";
 
-export const EcsDeployConfig = z.object({
+export const BaseConfig = z.object({
   accountId: z.string(),
   region: z.string(),
   taskFamily: z.string(),
   serviceName: z.string(),
   clusterName: z.string(),
+  configs: z
+    .array(
+      z.object({
+        name: z.string(),
+        destination: z.string(),
+        values: z.any(),
+      }),
+    )
+    .optional(),
+});
+
+export const BuildConfig = BaseConfig.extend({
   build: z.array(
     z.object({
       name: z.string(),
@@ -16,6 +28,9 @@ export const EcsDeployConfig = z.object({
       environment: z.record(z.string()).optional(),
     }),
   ),
+});
+
+export const DeployConfig = BuildConfig.extend({
   taskDefinition: z.object({
     template: z.string(),
     containerDefinitions: z.array(
@@ -27,12 +42,16 @@ export const EcsDeployConfig = z.object({
       }),
     ),
   }),
+});
+
+export const BootstrapConfig = BaseConfig.extend({
   configs: z
     .array(
       z.object({
         name: z.string(),
-        destination: z.string(),
-        values: z.any(),
+        treeFrom: z.string().optional(),
+        valueFrom: z.string().optional(),
+        value: z.string().optional(),
       }),
     )
     .optional(),

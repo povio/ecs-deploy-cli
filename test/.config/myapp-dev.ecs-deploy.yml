@@ -23,19 +23,24 @@ taskDefinition:
       image: backend
 
       # resolved at task init - avoid using these if possible
-      environment:
-        STAGE1: dev
-      secrets:
-        STAGE2: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
+      #environment:
+      #  STAGE1: dev
+      #secrets:
+      #  STAGE2: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
 
-# todo
 # resolved at runtime using `ecs-deploy config backend --stage dev`
-#configs:
-#  - name: backend
-#    destination: ./.config/dev.backend.yml
-#    values:
-#      - path: database
-#        object: ${arn:aws:ssm:::parameter/myapp-dev/database}
-#      - object: ${arn:ssm:/properties/myenv-dev}
-#      - path: database.password
-#        string: ${arn:aws:ssm:::parameter/myapp-dev/database/password}
+configs:
+  - name: backend
+    destination: ./.config/dev.backend.yml
+    values:
+
+        # map many ssm values under a path, @ for root
+      - name: @
+        treeFrom: arn:aws:ssm:::parameter/myenv-dev
+
+        # simple value mapping
+      - name: database__password
+        valueFrom: arn:aws:ssm:::parameter/myapp-dev/database/password
+
+      - name: database__host
+        valueFrom: env:DATABASE_HOST
