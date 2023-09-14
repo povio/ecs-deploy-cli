@@ -31,20 +31,7 @@ taskDefinition:
 # resolved at runtime using `ecs-deploy config backend --stage dev`
 configs:
   - name: backend
-    destination: ./.config/dev.backend.yml
+    destination: ./.config/myapp-dev.backend.yml
     values:
-
-        # resolve the template where the value has a prefix of `<protocol>:`
       - name: "@"
         configFrom: backend.template
-
-        # map many ssm values under a path, @ for root
-      #- name: "@"
-      #  treeFrom: arn:aws:ssm:::parameter/myapp-dev
-
-        # simple value mapping
-      #- name: database__password
-      #  valueFrom: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
-
-      - name: database__host
-        valueFrom: env:DATABASE_HOST

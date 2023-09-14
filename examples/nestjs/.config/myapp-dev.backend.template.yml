@@ -1,0 +1,7 @@
+database:
+  username: ${env:DATABASE_USERNAME}
+  password: ${arn:aws:ssm:::parameter/myapp-dev/database/password}
+
+app:
+  auth:
+    secret: ${arn:aws:ssm:::parameter/myapp-dev/auth/secret}
