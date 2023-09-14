@@ -3,6 +3,9 @@
  */
 
 import yargs from "yargs";
+import fs from "fs";
+import path from "path";
+import { dump } from "js-yaml";
 
 import { getBuilder, YargOption, YargsOptions } from "../helpers/yargs.helper";
 
@@ -61,8 +64,21 @@ export const command: yargs.CommandModule = {
         argv.pwd,
         argv.stage,
       );
-
-      console.log(data);
+      const { destination } = ci;
+      if (destination.endsWith(".json")) {
+        fs.writeFileSync(
+          path.join(argv.pwd, destination),
+          JSON.stringify(data, null, 2),
+        );
+      } else if (
+        destination.endsWith(".yml") ||
+        destination.endsWith(".yaml")
+      ) {
+        fs.writeFileSync(path.join(argv.pwd, destination), dump(data));
+      } // else if (destination.endsWith(".env")) {}
+      else {
+        throw new Error(`Unknown destination file type: ${destination}`);
+      }
     }
   },
 };

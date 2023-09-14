@@ -68,7 +68,7 @@ taskDefinition:
 # resolved at runtime using `ecs-deploy config backend --stage dev`
 configs:
   - name: backend
-    destination: ./.config/dev.backend.yml
+    destination: ./.config/myapp-dev.backend.yml
     values:
         # load config from ./.config/${stage}.backend.template.yml
         # and interpolate ${arn:aws:ssm..} and ${env:ENV_VALUE} values
