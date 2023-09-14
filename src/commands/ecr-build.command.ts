@@ -27,7 +27,7 @@ import {
   getAwsIdentity,
 } from "../helpers/aws.helper";
 import { Docker } from "../helpers/docker.helper";
-import { loadConfig } from "../helpers/config.helper";
+import { safeLoadConfig } from "../helpers/config.helper";
 import { BuildConfig } from "../types/ecs-deploy.dto";
 
 class EcrBuildOptions implements YargsOptions {
@@ -102,11 +102,11 @@ export const command: yargs.CommandModule = {
     logVariable("release", argv.release);
     logVariable("stage", argv.stage);
 
-    const config = await loadConfig(
-      BuildConfig,
+    const config = await safeLoadConfig(
+      "ecs-deploy",
       argv.pwd,
       argv.stage,
-      argv.verbose,
+      BuildConfig,
     );
 
     const docker = new Docker({

@@ -3,21 +3,14 @@ import { z } from "zod";
 export const BaseConfig = z.object({
   accountId: z.string(),
   region: z.string(),
+});
+
+export type BaseConfigDto = z.output<typeof BaseConfig>;
+
+export const BuildConfig = BaseConfig.extend({
   taskFamily: z.string(),
   serviceName: z.string(),
   clusterName: z.string(),
-  configs: z
-    .array(
-      z.object({
-        name: z.string(),
-        destination: z.string(),
-        values: z.any(),
-      }),
-    )
-    .optional(),
-});
-
-export const BuildConfig = BaseConfig.extend({
   build: z.array(
     z.object({
       name: z.string(),
@@ -44,15 +37,39 @@ export const DeployConfig = BuildConfig.extend({
   }),
 });
 
-export const BootstrapConfig = BaseConfig.extend({
-  configs: z
-    .array(
-      z.object({
-        name: z.string(),
-        treeFrom: z.string().optional(),
-        valueFrom: z.string().optional(),
-        value: z.string().optional(),
-      }),
-    )
-    .optional(),
+export const BootstrapConfigItemValue = z
+  .object({
+    name: z.string(),
+    treeFrom: z.string().optional(),
+    valueFrom: z.string().optional(),
+    objectFrom: z.string().optional(),
+    configFrom: z.string().optional(),
+    value: z.string().optional(),
+  })
+  .refine(
+    (val) =>
+      [
+        val.treeFrom,
+        val.valueFrom,
+        val.value,
+        val.configFrom,
+        val.objectFrom,
+      ].filter((x) => x !== undefined).length === 1,
+    {
+      message: "Exactly one of treeFrom, valueFrom, or value must be specified",
+    },
+  );
+
+export const BootstrapConfigItem = z.object({
+  name: z.string(),
+  destination: z.string(),
+  values: z.array(BootstrapConfigItemValue),
 });
+
+export type BootstrapConfigItemDto = z.output<typeof BootstrapConfigItem>;
+
+export const BootstrapConfig = BaseConfig.extend({
+  configs: z.array(BootstrapConfigItem),
+});
+
+export type BootstrapConfigDto = z.output<typeof BootstrapConfig>;

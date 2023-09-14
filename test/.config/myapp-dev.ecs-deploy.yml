@@ -34,13 +34,17 @@ configs:
     destination: ./.config/dev.backend.yml
     values:
 
+        # resolve the template where the value has a prefix of `<protocol>:`
+      - name: "@"
+        configFrom: backend.template
+
         # map many ssm values under a path, @ for root
-      - name: @
-        treeFrom: arn:aws:ssm:::parameter/myenv-dev
+      #- name: "@"
+      #  treeFrom: arn:aws:ssm:::parameter/myenv-dev
 
         # simple value mapping
-      - name: database__password
-        valueFrom: arn:aws:ssm:::parameter/myapp-dev/database/password
+      #- name: database__password
+      #  valueFrom: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
 
       - name: database__host
         valueFrom: env:DATABASE_HOST

@@ -56,7 +56,9 @@ export function logWarning(message: string) {
 }
 
 export function logError(message: string) {
-  console.log(chk.red(`[ERROR] ${message}`));
+  const e = new Error();
+  const stack = e.stack.toString().split(/\r\n|\n/);
+  console.log(chk.red(`[ERROR] ${message} ${stack[2]}`));
 }
 
 export function logBanner(message: string) {

@@ -5,8 +5,8 @@
   "bin": "./dist/sh.js",
   "scripts": {
     "start": "tsx ./src/sh.ts",
-    "test": "tsx --test ./src/*.test.ts",
-    "test:watch": "tsx --watch --test ./src/*.test.ts",
+    "test": "tsx --test ./src/**/*.test.ts",
+    "test:watch": "tsx --watch --test ./src/**/*.test.ts",
     "build:clean": "rm -rf ./dist",
     "build": "yarn build:clean && node ./esbuild.mjs && chmod +x ./dist/sh.js"
   },

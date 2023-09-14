@@ -8,6 +8,7 @@ await build({
   minify: true,
   metafile: false,
   format: "cjs",
+  keepNames: true,
   banner: {
     // hacks to allow commonjs modules to be imported
     //js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);import * as url from 'url';const __dirname = url.fileURLToPath(new URL('.', import.meta.url));"

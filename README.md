@@ -70,14 +70,20 @@ configs:
   - name: backend
     destination: ./.config/dev.backend.yml
     values:
-        # map many ssm values under a path, @ for root
+        # load config from ./.config/${stage}.backend.template.yml
+        # and interpolate ${arn:aws:ssm..} and ${env:ENV_VALUE} values
+        # load them onto the root
       - name: @
-        treeFrom: arn:aws:ssm:::parameter/myenv-dev
+        configFrom: backend.template
 
         # simple value mapping
       - name: database__password
         valueFrom: arn:aws:ssm:::parameter/myapp-dev/database/password
-
+        
+        # JSON object mapping
+      - name: database
+        valueFrom: arn:aws:ssm:::parameter/myapp-dev/database
+        
       - name: database__host
         valueFrom: env:DATABASE_HOST
 ```
@@ -122,7 +128,11 @@ Set up `./test/.config/myapp-dev.ecs-deploy.yml` with credentials to do a E2E te
 
 ```bash
 # alias for `ecs-deploy` while developing
-yarn start build --cwd ./test --stage myapp-dev
+yarn start build backend --cwd ./test --stage myapp-dev
+
+yarn start bootstrap --stage myapp-dev --verbose --pwd ./test
+
+yarn test:watch
 ```
 
 ### Release

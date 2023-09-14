@@ -8,7 +8,7 @@ import { logNotice } from "../helpers/cli.helper";
 import { chk } from "../helpers/chalk.helper";
 
 import { ecsWatch } from "../helpers/aws.helper";
-import { loadConfig } from "../helpers/config.helper";
+import { safeLoadConfig } from "../helpers/config.helper";
 import { DeployConfig } from "../types/ecs-deploy.dto";
 
 class EcsWatchOptions implements YargsOptions {
@@ -35,11 +35,11 @@ export const command: yargs.CommandModule = {
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsWatchOptions;
 
-    const config = await loadConfig(
-      DeployConfig,
+    const config = await safeLoadConfig(
+      "ecs-deploy",
       argv.pwd,
       argv.stage,
-      argv.verbose,
+      DeployConfig,
     );
 
     logNotice(`Watching ${config.serviceName}`);

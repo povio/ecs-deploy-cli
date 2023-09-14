@@ -1,0 +1,3 @@
+database:
+  username: myapp2
+  #password: ${arn:aws:ssm:::parameter/myenv-dev/database/password}

@@ -18,11 +18,10 @@ import {
 } from "@aws-sdk/client-ecr";
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
 import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
-import { logVariable, logVerbose } from "./cli.helper";
+import { logVerbose } from "./cli.helper";
 import {
   GetParameterCommand,
   GetParametersByPathCommand,
-  GetParametersCommand,
   SSMClient,
 } from "@aws-sdk/client-ssm";
 
@@ -307,7 +306,7 @@ export function ecsWatch(
 const SSMRegEx =
   /arn:aws:ssm:(?<region>[^:]+)?:(?<accountId>\d+)?:parameter\/(?<path>.*)/;
 
-export function resolveSecretPath(options: {
+export function resolveSSMPath(options: {
   accountId: string;
   region: string;
   arn: string;
@@ -340,14 +339,18 @@ export async function getSSMParameter(options: {
   if (!match?.groups?.path) {
     throw new Error("Could not parse parameter arn");
   }
-
+  let response;
   const ssm = getSSMInstance({ region: options.region });
-  const response = await ssm.send(
-    new GetParameterCommand({
-      Name: `/${match.groups.path}`,
-      WithDecryption: true,
-    }),
-  );
+  try {
+    response = await ssm.send(
+      new GetParameterCommand({
+        Name: `/${match.groups.path}`,
+        WithDecryption: true,
+      }),
+    );
+  } catch (e) {
+    throw new Error(`Could not get parameter ${options.name}`, { cause: e });
+  }
   if (!response.Parameter?.Value) {
     throw new Error("Could not get parameter");
   }
@@ -356,27 +359,34 @@ export async function getSSMParameter(options: {
 
 export async function getSSMParametersByPath(options: {
   region: string;
-  path: string;
+  name: string;
 }) {
+  const match = options.name.match(SSMRegEx);
+  if (!match?.groups?.path) {
+    throw new Error(`Could not parse parameter arn ${options.name}`);
+  }
+
   const ssm = getSSMInstance({ region: options.region });
-
   let parameters = {};
-  let nextToken: string | undefined = undefined;
-  do {
-    const response = await ssm.send(
-      new GetParametersByPathCommand({
-        Path: options.path,
-        WithDecryption: true,
-        Recursive: true,
-        NextToken: nextToken,
-        MaxResults: 50,
-      }),
-    );
-    parameters = merge(parameters, response.Parameters);
+  try {
+    let nextToken: string | undefined = undefined;
+    do {
+      const response = await ssm.send(
+        new GetParametersByPathCommand({
+          Path: `/${match.groups.path}`,
+          WithDecryption: true,
+          Recursive: true,
+          NextToken: nextToken,
+          MaxResults: 10,
+        }),
+      );
+      parameters = merge(parameters, response.Parameters);
 
-    // consume all parameters
-    nextToken = response.NextToken;
-  } while (nextToken);
-
+      // consume all parameters
+      nextToken = response.NextToken;
+    } while (nextToken);
+  } catch (e) {
+    throw new Error(`Could not get parameters ${options.name}`, { cause: e });
+  }
   return parameters;
 }

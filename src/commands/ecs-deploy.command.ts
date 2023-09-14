@@ -23,10 +23,9 @@ import {
   ecsRegisterTaskDefinition,
   ecsUpdateService,
   ecsWatch,
-  getSSMParameter,
-  resolveSecretPath,
+  resolveSSMPath,
 } from "../helpers/aws.helper";
-import { loadConfig } from "../helpers/config.helper";
+import { resolveResource, safeLoadConfig } from "../helpers/config.helper";
 import { DeployConfig } from "../types/ecs-deploy.dto";
 import { printDiff } from "../helpers/diff.helper";
 
@@ -63,12 +62,13 @@ export const command: yargs.CommandModule = {
     logBanner(`EcsDeploy ${getVersion()}`);
     logInfo(`NodeJS Version: ${process.version}`);
 
-    const config = await loadConfig(
-      DeployConfig,
+    const config = await safeLoadConfig(
+      "ecs-deploy",
       argv.pwd,
       argv.stage,
-      argv.verbose,
+      DeployConfig,
     );
+
     logVariable("pwd", argv.pwd);
     logVariable("release", argv.release);
     logVariable("version", argv.appVersion);
@@ -85,10 +85,7 @@ export const command: yargs.CommandModule = {
     logVariable("taskDefinition__template", config.taskDefinition.template);
 
     const template = JSON.parse(
-      await getSSMParameter({
-        region: config.region,
-        name: config.taskDefinition.template,
-      }),
+      await resolveResource(config.taskDefinition.template, config),
     );
 
     const tdRequest: RegisterTaskDefinitionCommandInput = JSON.parse(
@@ -187,7 +184,7 @@ export const command: yargs.CommandModule = {
         (acc, [name, valueFrom]) => {
           acc.push({
             name,
-            valueFrom: resolveSecretPath({
+            valueFrom: resolveSSMPath({
               arn: valueFrom,
               accountId: config.accountId,
               region: config.region,

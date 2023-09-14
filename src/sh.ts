@@ -24,11 +24,7 @@ yargs(hideBin(process.argv))
   .fail((msg, err) => {
     if (msg) logError(msg);
     if (err) {
-      if (process.env.VERBOSE) {
-        console.error(err);
-      } else {
-        logError(err.message);
-      }
+      console.error(err);
     }
     logInfo("Use '--help' for more info");
     process.exit(1);
