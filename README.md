@@ -91,13 +91,16 @@ configs:
 ## Run
 
 ```bash
-yarn ecs-deploy-cli --help
+yarn ecs-deploy --help
 
 # Build a new image from the current git commit and build target push to ECR 
-yarn ecs-deploy-cli build ${target} --stage my-stage
+yarn ecs-deploy build ${target} --stage my-stage
 
 # Deploy the task definition to ECS
-yarn ecs-deploy-cli deploy --stage my-stage
+yarn ecs-deploy deploy --stage my-stage
+
+# Generate a config script
+yarn ecs-deploy bootstrap --stage my-stage
 ```
 
 ## Run Options

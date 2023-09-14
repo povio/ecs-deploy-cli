@@ -1,4 +1,7 @@
 {
   "name": "nestjs",
-  "packageManager": "yarn@3.6.3"
+  "packageManager": "yarn@3.6.3",
+  "dependencies": {
+    "ecs-deploy-cli": "github:poviolabs/ecs-deploy-cli#v4"
+  }
 }
