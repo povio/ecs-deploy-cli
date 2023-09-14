@@ -31,7 +31,7 @@ npm i --location=global ecs-deploy-cli@poviolabs/ecs-deploy-cli#v4 --force
 
 ## Configure
 
-### ./${STAGE}.ecs-deploy.yaml
+### .config/${STAGE}.ecs-deploy.yaml
 ```yaml
 accountId: "000000000000"
 region: us-east-1
