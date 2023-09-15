@@ -4,7 +4,7 @@ import { cosmiconfigSync } from "cosmiconfig";
 import { logError, logVerbose } from "./cli.helper";
 import { z } from "zod";
 import { BaseConfigDto, BootstrapConfigItemDto } from "../types/ecs-deploy.dto";
-import { getSSMParameter, getSSMParametersByPath } from "./aws.helper";
+import { getSSMParameter } from "./aws.helper";
 
 /**
  * Load config in order, one of
@@ -42,9 +42,12 @@ export async function loadConfig(
 ): Promise<any> {
   let config = {};
   let found = false;
-  for (const name of [stage, `${stage}.local`]) {
+  for (const name of [
+    `${stage}.${moduleName}`,
+    `${stage}.${moduleName}.local`,
+  ]) {
     const { search } = cosmiconfigSync(moduleName, {
-      searchPlaces: [`${name}.${moduleName}.json`, `${name}.${moduleName}.yml`],
+      searchPlaces: [`${name}.json`, `${name}.yml`],
       stopDir: cwd,
     });
     const result = search(`${cwd}/.config`);
