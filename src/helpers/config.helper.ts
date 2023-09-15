@@ -159,6 +159,14 @@ export async function resolveResource(
   if (value.startsWith("env:")) {
     return process.env[value.slice(4)];
   }
+  if (value.startsWith("func:")) {
+    switch (value.slice(5)) {
+      case "timestamp":
+        return new Date().toISOString();
+      default:
+        throw new Error(`Unknown function ${value}`);
+    }
+  }
   throw new Error(`Cannot resolve resource ${value}`);
 }
 
