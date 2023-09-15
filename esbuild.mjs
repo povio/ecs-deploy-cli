@@ -1,4 +1,7 @@
 import { build } from "esbuild";
+import fs from "fs";
+
+const version = JSON.parse(fs.readFileSync('package.json', "utf-8")).version;
 
 await build({
   entryPoints: ["./src/sh.ts"],
@@ -15,5 +18,8 @@ await build({
   },
   target: "node14",
   logLevel: "info",
-  outfile: "./dist/sh.js"
+  outfile: "./dist/sh.js",
+  define: {
+    "process.env.ECS_DEPLOY_VERSION": `"${version}"`,
+  }
 });
