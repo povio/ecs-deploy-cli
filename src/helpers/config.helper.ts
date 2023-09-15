@@ -152,6 +152,7 @@ export async function resolveBootstrapConfigItem(
 export async function resolveResource(
   value: string,
   config: BaseConfigDto,
+  key: string = "@",
 ): Promise<any> {
   if (value.startsWith("arn:aws:ssm")) {
     return await getSSMParameter({ region: config.region, name: value });
@@ -164,23 +165,29 @@ export async function resolveResource(
       case "timestamp":
         return new Date().toISOString();
       default:
-        throw new Error(`Unknown function ${value}`);
+        throw new Error(`Unknown function ${value} at ${key}`);
     }
   }
-  throw new Error(`Cannot resolve resource ${value}`);
+  throw new Error(`Cannot resolve resource ${value} at ${key}`);
 }
 
 /**
  * Traverse the config and resolve any ${} values
  */
-export async function resolveConfig(value: any, config: BaseConfigDto) {
-  if (typeof value === "object") {
-    for (const [k, v] of Object.entries(value)) {
-      value[k] = await resolveConfig(v, config);
-    }
-  } else if (typeof value === "string") {
-    if (value.startsWith("${") && value.endsWith("}")) {
-      return await resolveResource(value.slice(2, -1), config);
+export async function resolveConfig(
+  value: any,
+  config: BaseConfigDto,
+  key?: string,
+) {
+  if (value !== null && value !== undefined) {
+    if (typeof value === "object") {
+      for (const [k, v] of Object.entries(value)) {
+        value[k] = await resolveConfig(v, config, `${key}.${k}`);
+      }
+    } else if (typeof value === "string") {
+      if (value.startsWith("${") && value.endsWith("}")) {
+        return await resolveResource(value.slice(2, -1), config);
+      }
     }
   }
   return value;
