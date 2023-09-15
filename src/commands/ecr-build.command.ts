@@ -110,7 +110,7 @@ export const command: yargs.CommandModule = {
     );
 
     const docker = new Docker({
-      verbose: argv.verbose,
+      verbose: true,
       cwd: argv.pwd,
       // pass in variables meant for docker
       env: Object.entries(process.env)
