@@ -136,23 +136,15 @@ export const command: yargs.CommandModule = {
     const imageName = `${config.accountId}.dkr.ecr.${config.region}.amazonaws.com/${container.repoName}:${argv.release}`;
     logVariable(`image`, imageName);
 
-    logInfo("Setting up AWS Docker Auth...");
-
-    const identity = await getAwsIdentity({ region: config.region });
-    logInfo(`AWS User Arn: ${identity.Arn}`);
-
-    const ecrCredentials = await ecrGetDockerCredentials({
-      region: config.region,
-    });
-    await docker.login({
-      serveraddress: ecrCredentials.endpoint,
-      username: "AWS",
-      password: ecrCredentials.password,
-    });
-    logInfo("AWS ECR Docker Login succeeded");
+    const loadIdentity = async () => {
+      logInfo("Setting up AWS Docker Auth...");
+      const identity = await getAwsIdentity({ region: config.region });
+      logInfo(`AWS User Arn: ${identity.Arn}`);
+    };
 
     // check if image already exists
     if (!argv.skipEcrExistsCheck) {
+      await loadIdentity();
       if (
         await ecrImageExists({
           region: config.region,
@@ -175,6 +167,18 @@ export const command: yargs.CommandModule = {
       logNotice(`Dockerfile path: ${dockerfilePath}`);
     }
 
+    const loadDocker = async () => {
+      const ecrCredentials = await ecrGetDockerCredentials({
+        region: config.region,
+      });
+      await docker.login({
+        serveraddress: ecrCredentials.endpoint,
+        username: "AWS",
+        password: ecrCredentials.password,
+      });
+      logInfo("AWS ECR Docker Login succeeded");
+    };
+
     // build image
     if (argv.buildx || !(await docker.imageExists(imageName)).data) {
       logInfo(
@@ -182,6 +186,10 @@ export const command: yargs.CommandModule = {
           ? "Building and pushing docker image"
           : "Building docker image",
       );
+
+      if (argv.buildx) {
+        await loadDocker();
+      }
 
       await docker.imageBuild(
         {
@@ -202,6 +210,7 @@ export const command: yargs.CommandModule = {
 
     if (!argv.skipPush) {
       if (!argv.buildx) {
+        await loadDocker();
         logInfo("Pushing to ECR...");
         await docker.imagePush(imageName, { verbose: true });
       }

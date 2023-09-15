@@ -1,6 +1,6 @@
 {
   "name": "ecs-deploy-cli",
-  "version": "4.1.3",
+  "version": "4.1.4",
   "packageManager": "yarn@3.6.3",
   "bin": {
     "ecs-deploy": "./dist/sh.js"
