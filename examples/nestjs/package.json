@@ -1,6 +1,11 @@
 {
   "name": "nestjs",
   "packageManager": "yarn@3.6.3",
+  "scripts": {
+     "build": "nest build",
+     "bootstrap": "ecs-deploy bootstrap",
+     "start:prod": "yarn bootstrap && node dist/main"
+  },
   "dependencies": {
     "ecs-deploy-cli": "github:poviolabs/ecs-deploy-cli#v4"
   }

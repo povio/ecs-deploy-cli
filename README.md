@@ -4,7 +4,7 @@ Use this tool to deploy a Docker image to ECR and ECS with CI or manually.
 
 Features:
 
-- Environment and SSM credentias storage conventions
+- Environment and SSM credentials storage conventions
 - GitHub Actions pipeline example
 - Cross-platform (made with TypeScript/Javascript, external requirements: `git`, `docker`)
 
@@ -12,7 +12,6 @@ Features:
 Examples:
 
 - [NestJs](./examples/nestjs) Docker and Pipeline
-- [NextJs](./examples/nextjs) Next
 
 # Usage
 
@@ -122,6 +121,16 @@ Only build the image. Useful for testing.
 #### --buildx
 
 Use [docker buildx](https://docs.docker.com/buildx/working-with-buildx/) to build on ARM / Apple M1.
+
+## How it works
+
+The build script builds and pushes a Docker image to ECR. 
+
+The deploy script generates a ECS task definition using a template stored on SSM and deploys it to ECS.
+
+The bootstrap script generates a config script with resolved values from SSM and environment variables.
+
+<img src="./docs/arch-overview.svg">
 
 ## Development
 

@@ -21,4 +21,4 @@ RUN yarn build
 EXPOSE 80
 
 # run the application
-CMD ["node", "-r", "tsconfig-paths/register", "dist/main.js"]
+CMD yarn start:prod

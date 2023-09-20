@@ -8,9 +8,9 @@ on:
 jobs:
   build-and-deploy:
     name: Build and deploy
-    uses: ./.github/workflows/build-and-deploy.yml
+    uses: ./.github/workflows/ecs-deploy.yml
     with:
-      STAGE: myapp-dev
+      STAGE: beybar-dev
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -1,3 +1,17 @@
+
+# config files
 ./.config/*.local.yaml
 
-node_modules
+# yarn
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+!.yarn/cache
+
+# general
+/dist
+.DS_Store
+.idea
+.vscode

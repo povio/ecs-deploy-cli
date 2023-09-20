@@ -11,11 +11,12 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
-      SLACK_BOT_TOKEN:
-        required: true
 
 jobs:
   build-and-deploy:
+    name: Build and deploy
+    timeout-minutes: 15
+    environment: ${{ inputs.STAGE }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -32,17 +33,17 @@ jobs:
 
       - name: Build image and deploy to ECR
         run: >-
-          AWS_ACCESS_KEY_ID=${{secrets.AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}}
-          STAGE=$STAGE
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          STAGE=${{ inputs.STAGE }}
           RELEASE=$GITHUB_SHA
           yarn ecs-deploy build backend
 
       - name: Deploy built image to ECS
         run: >-
-          AWS_ACCESS_KEY_ID=${{secrets.AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}}
-          STAGE=$STAGE
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          STAGE=${{ inputs.STAGE }}
           RELEASE=$GITHUB_SHA
           VERSION=$GITHUB_REF_NAME
           yarn ecs-deploy deploy
