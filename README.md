@@ -87,6 +87,28 @@ configs:
         valueFrom: env:DATABASE_HOST
 ```
 
+### Example
+
+Where `configFrom: backend.template` and the config file is `.config/${stage}.backend.template.yml`:
+
+```yaml
+database:
+  username: myapp2
+  password: ${arn:aws:ssm:::parameter/myapp-dev/database/password}
+  debug: ${env:DEBUG}
+```
+
+the output will be at the set destination, for example `./.config/myapp-dev.backend.yml`:
+
+```yaml
+database:
+  username: myapp2
+  password: the-password-from-ssm
+  debug: the-value-from-the-environment
+```
+
+```yaml
+
 ## Run
 
 ```bash

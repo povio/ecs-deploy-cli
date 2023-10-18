@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import { resolveBootstrapConfigItem } from "./config.helper";
+import assert from "assert";
 
-test("test", async () => {
+test("config.helper", async () => {
+  process.env.MYAPP_RECORD1 = "value 1";
+  process.env.MYAPP_RECORD2 = "value 2";
+  process.env.MYAPP_RECORD3 = "value 3";
+
   const config = await resolveBootstrapConfigItem(
     {
       name: "test",
@@ -9,7 +14,7 @@ test("test", async () => {
       values: [
         { name: "database__name", value: "test" },
         { name: "database__username2", value: "test" },
-        { name: "database__password", valueFrom: "env:PWD" },
+        { name: "database__password", valueFrom: "env:MYAPP_RECORD3" },
         {
           name: "@",
           configFrom: "backend.template",
@@ -28,5 +33,21 @@ test("test", async () => {
     "myapp-dev",
   );
 
-  console.log(config);
+  assert.deepStrictEqual(config, {
+    database: {
+      name: "test",
+      username2: "test",
+      password: "value 3",
+      username: "myapp2",
+      from_env: "value 1",
+      items: [
+        {
+          object1: {
+            record: "value 2",
+          },
+        },
+        "value 3",
+      ],
+    },
+  });
 });
