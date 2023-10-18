@@ -107,7 +107,6 @@ database:
   debug: the-value-from-the-environment
 ```
 
-```yaml
 
 ## Run
 
