@@ -21,14 +21,14 @@ import { getGitChanges, getGitVersion } from "../helpers/git.helper";
 
 import { getVersion } from "../helpers/version.helper";
 
-import {
-  ecrGetDockerCredentials,
-  ecrImageExists,
-  getAwsIdentity,
-} from "../helpers/aws.helper";
+import { getAwsIdentity } from "../helpers/aws.helper";
 import { Docker } from "../helpers/docker.helper";
 import { safeLoadConfig } from "../helpers/config.helper";
 import { BuildConfig } from "../types/ecs-deploy.dto";
+import {
+  ecrGetDockerCredentials,
+  ecrImageExists,
+} from "../helpers/aws-ecs.helper";
 
 class EcrBuildOptions implements YargsOptions {
   @YargOption({ demandOption: true })
@@ -75,7 +75,7 @@ export const command: yargs.CommandModule = {
     if (!argv.ci) {
       // check for git changes
       if (fs.existsSync(path.join(argv.pwd, ".git"))) {
-        logVariable("Git Version", await getGitVersion(argv.pwd));
+        logVariable("Git Bin Version", await getGitVersion(argv.pwd));
         const gitChanges = await getGitChanges(argv.pwd);
         if (gitChanges !== "") {
           if (argv.ignoreGitChanges) {
@@ -94,7 +94,7 @@ export const command: yargs.CommandModule = {
         }
       }
     } else {
-      logInfo("Running Interactively");
+      logInfo("Running Non-Interactively");
     }
 
     logBanner("Build Environment");

@@ -1,4 +1,3 @@
-
 async function simpleGit(p: string) {
   const { default: _simpleGit } = await import("simple-git");
   return _simpleGit(p);
@@ -16,7 +15,7 @@ export async function getGitVersion(pwd: string) {
 export async function getGitChanges(pwd: string): Promise<string | undefined> {
   try {
     const git = await simpleGit(pwd);
-    return git.raw("status", "--porcelain");
+    return await git.raw("status", "--porcelain");
   } catch (e) {
     console.log(e);
     return undefined;

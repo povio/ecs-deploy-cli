@@ -14,7 +14,8 @@ import {
   safeLoadConfig,
   resolveBootstrapConfigItem,
 } from "../helpers/config.helper";
-import { BootstrapConfig } from "../types/ecs-deploy.dto";
+
+import { BootstrapConfig } from "../types/bootstrap.dto";
 
 class BootstrapOptions implements YargsOptions {
   @YargOption({ envAlias: "PWD", demandOption: true })

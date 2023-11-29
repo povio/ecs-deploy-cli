@@ -1,6 +1,5 @@
 import type { Prompt as PromptSyncPrompt } from "prompt-sync";
 
-import { getGitVersion } from "./git.helper";
 import { chk } from "./chalk.helper";
 
 export const nonInteractive = !!process.env.CI;
@@ -55,10 +54,15 @@ export function logWarning(message: string) {
   console.log(chk.red(`[WARNING] ${message}`));
 }
 
-export function logError(message: string) {
-  const e = new Error();
-  const stack = e.stack.toString().split(/\r\n|\n/);
-  console.log(chk.red(`[ERROR] ${message} ${stack[2]}`));
+export function logError(error: Error | string, message?: string) {
+  if (error instanceof Error) {
+    console.log(chk.red(`[ERROR] ${message || error.message}`));
+    if (process.env.VERBOSE) {
+      console.error(error); // print stack trace
+    }
+  } else {
+    console.log(chk.red(`[ERROR] ${error}`));
+  }
 }
 
 export function logBanner(message: string) {

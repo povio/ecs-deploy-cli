@@ -23,11 +23,11 @@ import {
   ecsRegisterTaskDefinition,
   ecsUpdateService,
   ecsWatch,
-  resolveSSMPath,
-} from "../helpers/aws.helper";
+} from "../helpers/aws-ecs.helper";
 import { resolveResource, safeLoadConfig } from "../helpers/config.helper";
 import { DeployConfig } from "../types/ecs-deploy.dto";
 import { printDiff } from "../helpers/diff.helper";
+import { resolveSSMPath } from "../helpers/aws-ssm.helper";
 
 class EcsDeployOptions implements YargsOptions {
   @YargOption({ envAlias: "PWD", demandOption: true })

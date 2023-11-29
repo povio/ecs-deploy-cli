@@ -3,8 +3,8 @@ import merge from "lodash.merge";
 import { cosmiconfigSync } from "cosmiconfig";
 import { logError, logVerbose } from "./cli.helper";
 import { z } from "zod";
-import { BaseConfigDto, BootstrapConfigItemDto } from "../types/ecs-deploy.dto";
-import { getSSMParameter } from "./aws.helper";
+import { BaseConfigDto, BootstrapConfigItemDto } from "../types/bootstrap.dto";
+import { getSSMParameter } from "./aws-ssm.helper";
 
 /**
  * Load config in order, one of
@@ -16,7 +16,7 @@ import { getSSMParameter } from "./aws.helper";
  *  .config/stage.local.moduleName.yml
  */
 export async function safeLoadConfig<T extends z.ZodType<any, any, any>>(
-  moduleName: string = "ecs-deploy",
+  moduleName: string,
   cwd: string,
   stage: string,
   type: T,
@@ -48,7 +48,7 @@ export async function loadConfig(
   ]) {
     const { search } = cosmiconfigSync(moduleName, {
       searchPlaces: [`${name}.json`, `${name}.yml`],
-      stopDir: cwd,
+      stopDir: cwd
     });
     const result = search(`${cwd}/.config`);
     if (result && !result.isEmpty) {

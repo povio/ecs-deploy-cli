@@ -7,7 +7,7 @@ import { getBuilder, YargOption, YargsOptions } from "../helpers/yargs.helper";
 import { logNotice } from "../helpers/cli.helper";
 import { chk } from "../helpers/chalk.helper";
 
-import { ecsWatch } from "../helpers/aws.helper";
+import { ecsWatch } from "../helpers/aws-ecs.helper";
 import { safeLoadConfig } from "../helpers/config.helper";
 import { DeployConfig } from "../types/ecs-deploy.dto";
 
