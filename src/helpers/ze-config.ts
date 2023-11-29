@@ -1,10 +1,51 @@
-import merge from "lodash.merge";
-
-import { cosmiconfigSync } from "cosmiconfig";
-import { logError, logVerbose } from "./cli.helper";
 import { z } from "zod";
-import { BaseConfigDto, BootstrapConfigItemDto } from "../types/bootstrap.dto";
+import merge from "lodash.merge";
+import { cosmiconfigSync } from "cosmiconfig";
+
+import { logError, logVerbose } from "./cli.helper";
 import { getSSMParameter } from "./aws-ssm.helper";
+
+export const ZeConfigItemValue = z
+  .object({
+    name: z.string(),
+    treeFrom: z.string().optional(),
+    valueFrom: z.string().optional(),
+    objectFrom: z.string().optional(),
+    configFrom: z.string().optional(),
+    config: z.any().optional(),
+    value: z.string().optional(),
+  })
+  .refine(
+    (val) =>
+      [
+        //val.treeFrom,
+        val.valueFrom,
+        val.value,
+        val.configFrom,
+        val.config,
+        val.objectFrom,
+      ].filter((x) => x !== undefined).length === 1,
+    {
+      message: "Exactly one of treeFrom, valueFrom, or value must be specified",
+    },
+  );
+export const ZeConfigItem = z.object({
+  name: z.string().optional(),
+  destination: z.string(),
+  // source: z.string().optional(),
+  values: z.array(ZeConfigItemValue),
+});
+export type ZeConfigItemDto = z.output<typeof ZeConfigItem>;
+
+export const ZeConfigs = z
+  .union([
+    ZeConfigItem.extend({ name: z.string().optional() }),
+    ZeConfigItem.array(),
+  ])
+  .transform((val) =>
+    Array.isArray(val) ? val : [{ name: "default", ...val }],
+  );
+export type ZeConfigsDto = z.output<typeof ZeConfigs>;
 
 /**
  * Load config in order, one of
@@ -20,15 +61,24 @@ export async function safeLoadConfig<T extends z.ZodType<any, any, any>>(
   cwd: string,
   stage: string,
   type: T,
+  optional: boolean = true,
 ): Promise<z.output<T>> {
-  const config = await loadConfig(moduleName, cwd, stage);
+  const config = await loadConfig(moduleName, cwd, stage, optional);
   const result = type.safeParse(config);
   if (!result.success) {
-    const errors: string[] = [];
     for (const error of result.error.errors) {
-      errors.push(`${error.path.join(".")}: ${error.message}`);
+      if (error.code === "invalid_union") {
+        for (const error2 of error.unionErrors) {
+          const unionErrors: string[] = [];
+          for (const error3 of error2.issues) {
+            unionErrors.push(`'${error3.path.join(".")}' => ${error3.message}`);
+          }
+          logError(`Config conditional error: ${unionErrors.join(" & ")}`);
+        }
+      } else {
+        logError(`Config error at '${error.path.join(".")}': ${error.message}`);
+      }
     }
-    logError(`Invalid config: ${errors.join(";")}`);
     process.exit(1);
   }
   return result.data;
@@ -43,14 +93,22 @@ export async function loadConfig(
   let config = {};
   let found = false;
   for (const name of [
+    `${moduleName}`,
     `${stage}.${moduleName}`,
     `${stage}.${moduleName}.local`,
   ]) {
     const { search } = cosmiconfigSync(moduleName, {
       searchPlaces: [`${name}.json`, `${name}.yml`],
-      stopDir: cwd
+      stopDir: cwd,
     });
-    const result = search(`${cwd}/.config`);
+
+    let result;
+    try {
+      result = search(`${cwd}/.config`);
+    } catch (e) {
+      console.error(e);
+    }
+
     if (result && !result.isEmpty) {
       logVerbose(`Loaded ${result.filepath}`);
       config = merge(config, result.config);
@@ -58,14 +116,14 @@ export async function loadConfig(
     }
   }
   if (!found && !optional) {
-    throw new Error(`Could not find config for stage ${stage}`);
+    throw new Error(`Could not find config '${moduleName}' for stage ${stage}`);
   }
   return config;
 }
 
-export async function resolveBootstrapConfigItem(
-  { values }: BootstrapConfigItemDto,
-  config: BaseConfigDto,
+export async function resolveZeConfigItem(
+  { values }: ZeConfigItemDto,
+  options: { awsRegion?: string; release?: string },
   cwd: string,
   stage: string,
 ) {
@@ -75,6 +133,7 @@ export async function resolveBootstrapConfigItem(
     treeFrom,
     valueFrom,
     configFrom,
+    config,
     objectFrom,
     value,
   } of values) {
@@ -84,10 +143,10 @@ export async function resolveBootstrapConfigItem(
       resolvedValue = value;
     } else if (valueFrom) {
       // resolve the value
-      resolvedValue = await resolveResource(valueFrom, config);
+      resolvedValue = await resolveResource(valueFrom, { ...options, stage });
     } else if (objectFrom) {
       // resolve the object and merge
-      resolvedValue = await resolveResource(objectFrom, config);
+      resolvedValue = await resolveResource(objectFrom, { ...options, stage });
       resolvedValue = JSON.parse(resolvedValue);
     } else if (treeFrom) {
       throw new Error(`treeFrom is not supported yet`);
@@ -116,11 +175,20 @@ export async function resolveBootstrapConfigItem(
     } else if (configFrom) {
       // get the template and resolve the values
       const unresolvedValue = await loadConfig(configFrom, cwd, stage, false);
-      resolvedValue = await resolveConfig(unresolvedValue, config);
+      resolvedValue = await resolveConfig(unresolvedValue, {
+        ...options,
+        stage,
+      });
+    } else if (options) {
+      // get the template and resolve the values
+      resolvedValue = await resolveConfig(config, {
+        ...options,
+        stage,
+      });
     } else {
       // zod should prevent this
       throw new Error(
-        `Exactly one of treeFrom, valueFrom, or value must be specified`,
+        `Exactly one of valueFrom, configFrom, objectFrom, config, or value must be specified`,
       );
     }
     if (resolvedValue !== undefined) {
@@ -154,11 +222,16 @@ export async function resolveBootstrapConfigItem(
  */
 export async function resolveResource(
   value: string,
-  config: BaseConfigDto,
+  config: { awsRegion?: string; release?: string; stage?: string },
   key: string = "@",
 ): Promise<any> {
   if (value.startsWith("arn:aws:ssm")) {
-    return await getSSMParameter({ region: config.region, name: value });
+    if (!config.awsRegion) {
+      throw new Error(
+        `Cannot resolve resource ${value} at ${key} without awsRegion`,
+      );
+    }
+    return await getSSMParameter({ region: config.awsRegion, name: value });
   }
   if (value.startsWith("env:")) {
     return process.env[value.slice(4)];
@@ -167,11 +240,15 @@ export async function resolveResource(
     switch (value.slice(5)) {
       case "timestamp":
         return new Date().toISOString();
+      case "stage":
+        return config.stage;
+      case "release":
+        return config.release;
       default:
-        throw new Error(`Unknown function ${value} at ${key}`);
+        throw new Error(`Unknown function '${value}' at '${key}'`);
     }
   }
-  throw new Error(`Cannot resolve resource ${value} at ${key}`);
+  throw new Error(`Cannot resolve resource '${value}' at '${key}'`);
 }
 
 /**
@@ -179,7 +256,7 @@ export async function resolveResource(
  */
 export async function resolveConfig(
   value: any,
-  config: BaseConfigDto,
+  config: { awsRegion?: string; stage?: string },
   key?: string,
 ) {
   if (value !== null && value !== undefined) {

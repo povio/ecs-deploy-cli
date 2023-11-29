@@ -4,31 +4,20 @@
  */
 
 import yargs from "yargs";
-import path from "path";
-import fs from "fs";
 
 import { YargOption, YargsOptions, getBuilder } from "../helpers/yargs.helper";
+import { ecrBuild } from "./ecr-build";
 import {
   logBanner,
-  logVariable,
-  logInfo,
-  logWarning,
-  logNotice,
   logError,
+  logInfo,
+  logVariable,
+  logWarning,
 } from "../helpers/cli.helper";
-import { chk } from "../helpers/chalk.helper";
-import { getGitChanges, getGitVersion } from "../helpers/git.helper";
-
 import { getVersion } from "../helpers/version.helper";
-
-import { getAwsIdentity } from "../helpers/aws.helper";
-import { Docker } from "../helpers/docker.helper";
-import { safeLoadConfig } from "../helpers/config.helper";
-import { BuildConfig } from "../types/ecs-deploy.dto";
-import {
-  ecrGetDockerCredentials,
-  ecrImageExists,
-} from "../helpers/aws-ecs.helper";
+import fs from "fs";
+import path from "path";
+import { getGitChanges, getGitVersion } from "../helpers/git.helper";
 
 class EcrBuildOptions implements YargsOptions {
   @YargOption({ demandOption: true })
@@ -69,8 +58,15 @@ export const command: yargs.CommandModule = {
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcrBuildOptions;
 
-    logBanner(`EcsDeploy ${getVersion()}`);
-    logInfo(`NodeJS Version: ${process.version}`);
+    if (argv.verbose) {
+      logBanner(`EcsDeploy ${getVersion()}`);
+      logInfo(`NodeJS Version: ${process.version}`);
+
+      logBanner("Build Environment");
+      logVariable("pwd", argv.pwd);
+      logVariable("release", argv.release);
+      logVariable("stage", argv.stage);
+    }
 
     if (!argv.ci) {
       // check for git changes
@@ -97,129 +93,6 @@ export const command: yargs.CommandModule = {
       logInfo("Running Non-Interactively");
     }
 
-    logBanner("Build Environment");
-    logVariable("pwd", argv.pwd);
-    logVariable("release", argv.release);
-    logVariable("stage", argv.stage);
-
-    const config = await safeLoadConfig(
-      "ecs-deploy",
-      argv.pwd,
-      argv.stage,
-      BuildConfig,
-    );
-
-    const docker = new Docker({
-      verbose: true,
-      cwd: argv.pwd,
-      // pass in variables meant for docker
-      env: Object.entries(process.env)
-        .filter((x) => x[0].startsWith("DOCKER_"))
-        .reduce(
-          (acc, [key, value]) => {
-            acc[key] = value as string;
-            return acc;
-          },
-          {} as Record<string, string>,
-        ),
-    });
-    logBanner(`Docker ${(await docker.version()).data}`);
-
-    logVariable("container", argv.container);
-
-    const container = config.build.find((x) => x.name === argv.container);
-    if (!container) {
-      throw new Error(`Container ${argv.container} not found`);
-    }
-
-    // load ECR details
-    const imageName = `${config.accountId}.dkr.ecr.${config.region}.amazonaws.com/${container.repoName}:${argv.release}`;
-    logVariable(`image`, imageName);
-
-    const loadIdentity = async () => {
-      logInfo("Setting up AWS Docker Auth...");
-      const identity = await getAwsIdentity({ region: config.region });
-      logInfo(`AWS User Arn: ${identity.Arn}`);
-    };
-
-    // check if image already exists
-    if (!argv.skipEcrExistsCheck) {
-      await loadIdentity();
-      if (
-        await ecrImageExists({
-          region: config.region,
-          repositoryName: container.repoName,
-          imageIds: [{ imageTag: argv.release }],
-        })
-      ) {
-        logInfo("Image already exists");
-        return;
-      }
-    }
-
-    const dockerfileContext = path.resolve(container.context || argv.pwd);
-    const dockerfilePath = path.join(
-      dockerfileContext,
-      container.dockerfile || "Dockerfile",
-    );
-    if (container.context || container.dockerfile !== "Dockerfile") {
-      logNotice(`Dockerfile context: ${dockerfileContext}`);
-      logNotice(`Dockerfile path: ${dockerfilePath}`);
-    }
-
-    const loadDocker = async () => {
-      const ecrCredentials = await ecrGetDockerCredentials({
-        region: config.region,
-      });
-      await docker.login({
-        serveraddress: ecrCredentials.endpoint,
-        username: "AWS",
-        password: ecrCredentials.password,
-      });
-      logInfo("AWS ECR Docker Login succeeded");
-    };
-
-    // build image
-    if (argv.buildx || !(await docker.imageExists(imageName)).data) {
-      logInfo(
-        argv.buildx && !argv.skipPush
-          ? "Building and pushing docker image"
-          : "Building docker image",
-      );
-
-      if (argv.buildx) {
-        await loadDocker();
-      }
-
-      await docker.imageBuild(
-        {
-          imageName,
-          src: [dockerfilePath],
-          buildargs: {
-            RELEASE: argv.release,
-            ...(container.environment ? container.environment : {}),
-          },
-          context: dockerfileContext,
-          buildx: argv.buildx,
-          platform: container.platform,
-          push: argv.buildx && !argv.skipPush,
-        },
-        { verbose: argv.verbose },
-      );
-    }
-
-    if (!argv.skipPush) {
-      if (!argv.buildx) {
-        await loadDocker();
-        logInfo("Pushing to ECR...");
-        await docker.imagePush(imageName, { verbose: true });
-      }
-
-      logInfo(
-        `Done! Deploy the service with  ${chk.magenta(
-          `yarn ecs-deploy-cli deploy --stage ${argv.stage}`,
-        )}`,
-      );
-    }
+    return ecrBuild(argv);
   },
 };

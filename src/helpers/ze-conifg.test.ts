@@ -1,13 +1,13 @@
 import { test } from "node:test";
-import { resolveBootstrapConfigItem } from "./config.helper";
 import assert from "assert";
+import { resolveZeConfigItem } from "./ze-config";
 
 test("config.helper", async () => {
   process.env.MYAPP_RECORD1 = "value 1";
   process.env.MYAPP_RECORD2 = "value 2";
   process.env.MYAPP_RECORD3 = "value 3";
 
-  const config = await resolveBootstrapConfigItem(
+  const config = await resolveZeConfigItem(
     {
       name: "test",
       destination: "./.config/myapp-dev.backend.yml",
@@ -26,8 +26,8 @@ test("config.helper", async () => {
       ],
     },
     {
-      accountId: "000000000000",
-      region: "us-east-1",
+      awsRegion: "us-east-1",
+      release: "us-east-1",
     },
     "./test",
     "myapp-dev",

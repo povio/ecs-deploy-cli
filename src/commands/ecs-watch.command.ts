@@ -8,8 +8,8 @@ import { logNotice } from "../helpers/cli.helper";
 import { chk } from "../helpers/chalk.helper";
 
 import { ecsWatch } from "../helpers/aws-ecs.helper";
-import { safeLoadConfig } from "../helpers/config.helper";
-import { DeployConfig } from "../types/ecs-deploy.dto";
+import { z } from "zod";
+import { safeLoadConfig } from "../helpers/ze-config";
 
 class EcsWatchOptions implements YargsOptions {
   @YargOption({ envAlias: "PWD", demandOption: true })
@@ -34,15 +34,21 @@ export const command: yargs.CommandModule = {
   builder: getBuilder(EcsWatchOptions),
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as EcsWatchOptions;
-
     const config = await safeLoadConfig(
       "ecs-deploy",
       argv.pwd,
       argv.stage,
-      DeployConfig,
+      z.object({
+        template: z.string(),
+        region: z.string(),
+        taskFamily: z.string(),
+        serviceName: z.string(),
+        clusterName: z.string(),
+      }),
     );
 
     logNotice(`Watching ${config.serviceName}`);
+
     await ecsWatch(
       {
         region: config.region,
