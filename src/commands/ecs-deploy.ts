@@ -60,10 +60,6 @@ export async function ecsDeploy(argv: {
         z.object({
           name: z.string(),
           repoName: z.string(),
-          context: z.string().optional(),
-          dockerfile: z.string().optional(),
-          platform: z.string().default("linux/amd64"),
-          environment: z.record(z.string()).optional(),
         }),
       ),
     }),
