@@ -9,6 +9,7 @@
     "start": "tsx ./src/sh.ts",
     "start:dist": "node ./dist/sh.js",
     "test": "tsx --test ./src/**/*.test.ts",
+    "test:e2e": "tsx --test ./test/**/*.test.ts",
     "test:watch": "tsx --watch --test ./src/**/*.test.ts",
     "build:clean": "rm -rf ./dist",
     "build": "yarn build:clean && node ./esbuild.mjs && chmod +x ./dist/sh.js",

@@ -16,17 +16,30 @@ build:
 
 # deploy to ecs with `ecs-deploy deploy --stage dev`
 taskDefinition:
-  template: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
-  containerDefinitions:
-    - name: backend
-      # name of build above or any other docker path
-      image: backend
+  - name: default
+    template: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
+    containerDefinitions:
+      - name: backend
+        # name of build above or any other docker path
+        image: backend
 
-      # resolved at task init - avoid using these if possible
-      #environment:
-      #  STAGE1: dev
-      #secrets:
-      #  STAGE2: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
+        # resolved at task init - avoid using these if possible
+        #environment:
+        #  STAGE1: dev
+        #secrets:
+        #  STAGE2: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
+
+  - name: worker
+    template: config:task-definition
+    containerDefinitions:
+      - name: backend
+        image: backend
+    accountId: "000000000000"
+    region: us-east-1
+    taskFamily: myapp-dev-backend
+    serviceName: myapp-dev-backend
+    clusterName: myapp-dev
+
 
 # resolved at runtime using `ecs-deploy config backend --stage dev`
 configs:

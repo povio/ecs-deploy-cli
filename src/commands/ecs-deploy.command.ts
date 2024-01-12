@@ -14,6 +14,9 @@ class EcsDeployOptions implements YargsOptions {
   @YargOption({ envAlias: "STAGE", demandOption: true })
   stage!: string;
 
+  @YargOption({ envAlias: "TARGET" })
+  target!: string;
+
   @YargOption({ envAlias: "RELEASE", demandOption: true })
   release!: string;
 
@@ -31,7 +34,7 @@ class EcsDeployOptions implements YargsOptions {
 }
 
 export const command: yargs.CommandModule = {
-  command: "deploy",
+  command: "deploy [target]",
   describe: "Deploy the ECR Image to ECS",
   builder: getBuilder(EcsDeployOptions),
   handler: async (_argv) => {

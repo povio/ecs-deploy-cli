@@ -23,6 +23,7 @@ import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 export async function ecsDeploy(argv: {
   pwd: string;
   stage: string;
+  target: string;
   release: string;
   appVersion: string;
   ci: boolean;
@@ -31,6 +32,33 @@ export async function ecsDeploy(argv: {
 }) {
   logBanner(`EcsDeploy ${getVersion()}`);
   logInfo(`NodeJS Version: ${process.version}`);
+
+  const TaskDefinitionConfig = z.object({
+    name: z.string().optional(),
+    target: z.string().optional(),
+
+    template: z.string(),
+
+    accountId: z.string().optional(),
+    region: z.string().optional(),
+
+    taskFamily: z.string().optional(),
+    serviceName: z.string().optional(),
+    clusterName: z.string().optional(),
+
+    containerDefinitions: z.array(
+      z.object({
+        name: z.string(),
+        image: z.string(),
+        environment: z.record(z.string()).optional(),
+        secrets: z.record(z.string()).optional(),
+      }),
+    ),
+  });
+
+  const TaskDefinitionConfigs = z
+    .union([TaskDefinitionConfig, TaskDefinitionConfig.array()])
+    .transform((val) => (Array.isArray(val) ? val : [val]));
 
   const config = await safeLoadConfig(
     "ecs-deploy",
@@ -44,17 +72,7 @@ export async function ecsDeploy(argv: {
       serviceName: z.string(),
       clusterName: z.string(),
 
-      taskDefinition: z.object({
-        template: z.string(),
-        containerDefinitions: z.array(
-          z.object({
-            name: z.string(),
-            image: z.string(),
-            environment: z.record(z.string()).optional(),
-            secrets: z.record(z.string()).optional(),
-          }),
-        ),
-      }),
+      taskDefinition: TaskDefinitionConfigs,
 
       build: z.array(
         z.object({
@@ -70,23 +88,48 @@ export async function ecsDeploy(argv: {
   logVariable("version", argv.appVersion);
   logVariable("stage", argv.stage);
 
+  let taskDefinition;
+  if (argv.target) {
+    logVariable("target", argv.target);
+    taskDefinition = config.taskDefinition.find(
+      (x) => x.name === argv.target || x.target === argv.target,
+    );
+  } else {
+    taskDefinition = config.taskDefinition.find(
+      (x) =>
+        (!x.name && !x.target) || x.name == "default" || x.target == "default",
+    );
+  }
+
+  if (!taskDefinition) {
+    throw new Error("Task definition not found");
+  }
+
+  const accountId = taskDefinition.accountId || config.accountId;
+  const region = taskDefinition.region || config.region;
+  const taskFamily = taskDefinition.taskFamily || config.taskFamily;
+  const clusterName = taskDefinition.clusterName || config.clusterName;
+  const serviceName = taskDefinition.serviceName || config.serviceName;
+
   logBanner("Deploy Environment");
-  logVariable("accountId", config.accountId);
-  logVariable("region", config.region);
-  logVariable("taskFamily", config.taskFamily);
-  logVariable("clusterName", config.clusterName);
-  logVariable("serviceName", config.serviceName);
+  logVariable("accountId", accountId);
+  logVariable("region", region);
+  logVariable("taskFamily", taskFamily);
+  logVariable("clusterName", clusterName);
+  logVariable("serviceName", serviceName);
 
   logBanner("Fetching template");
-  logVariable("taskDefinition__template", config.taskDefinition.template);
+  logVariable("taskDefinition__template", taskDefinition.template);
 
-  const template = JSON.parse(
-    await resolveResource(config.taskDefinition.template, {
-      awsRegion: config.region,
-      release: argv.release,
-      stage: argv.stage,
-    }),
-  );
+  const rawTemplate = await resolveResource(taskDefinition.template, {
+    awsRegion: region,
+    release: argv.release,
+    stage: argv.stage,
+    cwd: argv.pwd,
+  });
+
+  const template =
+    typeof rawTemplate === "string" ? JSON.parse(rawTemplate) : rawTemplate;
 
   const tdRequest: RegisterTaskDefinitionCommandInput = JSON.parse(
     JSON.stringify(template),
@@ -94,7 +137,7 @@ export async function ecsDeploy(argv: {
 
   const version = argv.appVersion;
 
-  for (const configContainer of config.taskDefinition.containerDefinitions) {
+  for (const configContainer of taskDefinition.containerDefinitions) {
     logBanner(`Container ${configContainer.name}`);
 
     const templateContainer = tdRequest.containerDefinitions?.find(
@@ -113,14 +156,14 @@ export async function ecsDeploy(argv: {
       );
       if (buildContainer) {
         // if container image is found in the build config, we have the image - match the release
-        templateContainer.image = `${config.accountId}.dkr.ecr.${config.region}.amazonaws.com/${buildContainer.repoName}:${argv.release}`;
+        templateContainer.image = `${accountId}.dkr.ecr.${region}.amazonaws.com/${buildContainer.repoName}:${argv.release}`;
         logInfo(`Using build image ${templateContainer.image}`);
 
         // load ECR details
         if (!argv.skipEcrExistsCheck) {
           if (
             !(await ecrImageExists({
-              region: config.region,
+              region,
               repositoryName: buildContainer.repoName,
               imageIds: [{ imageTag: argv.release }],
             }))
@@ -184,8 +227,8 @@ export async function ecsDeploy(argv: {
           name,
           valueFrom: resolveSSMPath({
             arn: valueFrom,
-            accountId: config.accountId,
-            region: config.region,
+            accountId,
+            region,
           }),
         });
         return acc;
@@ -215,7 +258,7 @@ export async function ecsDeploy(argv: {
   logInfo("Creating new task..");
 
   const newTaskDefinition = await ecsRegisterTaskDefinition({
-    region: config.region,
+    region,
     taskDefinitionRequest: tdRequest,
   });
 
@@ -228,9 +271,9 @@ export async function ecsDeploy(argv: {
   logInfo(`Updating service task to revision ${newTaskDefinition.revision}...`);
 
   await ecsUpdateService({
-    region: config.region,
-    service: config.serviceName,
-    cluster: config.clusterName,
+    region: region,
+    service: serviceName,
+    cluster: clusterName,
     taskDefinition: newTaskDefinition.taskDefinitionArn,
   });
 
@@ -241,9 +284,9 @@ export async function ecsDeploy(argv: {
 
     const watch = ecsWatch(
       {
-        region: config.region,
-        service: config.serviceName,
-        cluster: config.clusterName,
+        region: region,
+        service: serviceName,
+        cluster: clusterName,
       },
       (message) => {
         switch (message.type) {

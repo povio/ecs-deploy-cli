@@ -51,18 +51,19 @@ build:
 
 # deploy to ecs with `ecs-deploy deploy --stage dev`
 taskDefinition:
-  template: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
-  containerDefinitions:
-    - name: backend
-      # name of build above or any other docker path
-      image: backend
+  - name: default
+    template: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
+    containerDefinitions:
+      - name: backend
+        # name of build above or any other docker path
+        image: backend
 
-      # inserted into task definition
-      environment:
-        STAGE1: dev
-      # inserted into task definition and resolved at task init
-      secrets:
-        STAGE2: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
+        # inserted into task definition
+        environment:
+          STAGE1: dev
+        # inserted into task definition and resolved at task init
+        secrets:
+          STAGE2: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
 
 # resolved at runtime using `ecs-deploy config backend --stage dev`
 configs:
@@ -113,17 +114,17 @@ database:
 ```bash
 yarn ecs-deploy --help
 
-# Build a new image from the current git commit and build target push to ECR 
-yarn ecs-deploy build ${target} --stage my-stage
+# Build a new image from the current git commit and push to ECR 
+yarn ecs-deploy build <name> --stage my-stage
 
 # Push an existing image to ECR (tag of image needs to be the same as RELEASE or the git commit hash )
-# yarn ecs-deploy push ${target} --stage my-stage
+# yarn ecs-deploy push <name> --stage my-stage
 
 # Deploy the task definition to ECS
-yarn ecs-deploy deploy --stage my-stage
+yarn ecs-deploy deploy [name] --stage my-stage
 
 # Generate a config script
-yarn ecs-deploy bootstrap --stage my-stage
+yarn ecs-deploy bootstrap [name] --stage my-stage
 ```
 
 ## Run Options
