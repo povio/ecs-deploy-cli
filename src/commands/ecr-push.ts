@@ -17,7 +17,7 @@ export async function ecrPush(argv: {
   skipEcrExistsCheck: boolean;
   verbose: boolean;
 }) {
-  const config = await safeLoadConfig(
+  const config2 = await safeLoadConfig(
     "ecs-deploy",
     argv.pwd,
     argv.stage,
@@ -28,6 +28,8 @@ export async function ecrPush(argv: {
         z.object({
           name: z.string(),
           repoName: z.string(),
+          region: z.string().optional(),
+          accountId: z.string().optional(),
         }),
       ),
     }),
@@ -51,18 +53,21 @@ export async function ecrPush(argv: {
 
   logVariable("container", argv.container);
 
-  const container = config.build.find((x) => x.name === argv.container);
+  const container = config2.build.find((x) => x.name === argv.container);
   if (!container) {
     throw new Error(`Container ${argv.container} not found`);
   }
 
+  const accountId = container.accountId || config2.accountId;
+  const region = container.region || config2.region;
+
   // load ECR details
-  const imageName = `${config.accountId}.dkr.ecr.${config.region}.amazonaws.com/${container.repoName}:${argv.release}`;
+  const imageName = `${accountId}.dkr.ecr.${region}.amazonaws.com/${container.repoName}:${argv.release}`;
   logVariable(`image`, imageName);
 
   const loadIdentity = async () => {
     logInfo("Setting up AWS Docker Auth...");
-    const identity = await getAwsIdentity({ region: config.region });
+    const identity = await getAwsIdentity({ region });
     logInfo(`AWS User Arn: ${identity.Arn}`);
   };
 
@@ -71,7 +76,7 @@ export async function ecrPush(argv: {
     await loadIdentity();
     if (
       await ecrImageExists({
-        region: config.region,
+        region,
         repositoryName: container.repoName,
         imageIds: [{ imageTag: argv.release }],
       })
@@ -83,7 +88,7 @@ export async function ecrPush(argv: {
 
   const loadDocker = async () => {
     const ecrCredentials = await ecrGetDockerCredentials({
-      region: config.region,
+      region,
     });
     await docker.login({
       serveraddress: ecrCredentials.endpoint,

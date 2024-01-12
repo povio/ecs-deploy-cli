@@ -36,6 +36,8 @@ export async function ecrBuild(argv: {
         z.object({
           name: z.string(),
           repoName: z.string(),
+          region: z.string().optional(),
+          accountId: z.string().optional(),
           context: z.string().optional(),
           dockerfile: z.string().optional(),
           platform: z.string().default("linux/amd64"),
@@ -59,6 +61,7 @@ export async function ecrBuild(argv: {
         {} as Record<string, string>,
       ),
   });
+
   logBanner(`Docker ${(await docker.version()).data}`);
 
   logVariable("container", argv.container);
@@ -68,13 +71,16 @@ export async function ecrBuild(argv: {
     throw new Error(`Container ${argv.container} not found`);
   }
 
+  const accountId = container.accountId || config.accountId;
+  const region = container.region || config.region;
+
   // load ECR details
-  const imageName = `${config.accountId}.dkr.ecr.${config.region}.amazonaws.com/${container.repoName}:${argv.release}`;
+  const imageName = `${accountId}.dkr.ecr.${region}.amazonaws.com/${container.repoName}:${argv.release}`;
   logVariable(`image`, imageName);
 
   const loadIdentity = async () => {
     logInfo("Setting up AWS Docker Auth...");
-    const identity = await getAwsIdentity({ region: config.region });
+    const identity = await getAwsIdentity({ region });
     logInfo(`AWS User Arn: ${identity.Arn}`);
   };
 
@@ -83,7 +89,7 @@ export async function ecrBuild(argv: {
     await loadIdentity();
     if (
       await ecrImageExists({
-        region: config.region,
+        region,
         repositoryName: container.repoName,
         imageIds: [{ imageTag: argv.release }],
       })
@@ -105,7 +111,7 @@ export async function ecrBuild(argv: {
 
   const loadDocker = async () => {
     const ecrCredentials = await ecrGetDockerCredentials({
-      region: config.region,
+      region,
     });
     await docker.login({
       serveraddress: ecrCredentials.endpoint,
