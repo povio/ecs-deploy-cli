@@ -65,12 +65,12 @@ export async function ecsDeploy(argv: {
     argv.pwd,
     argv.stage,
     z.object({
-      accountId: z.string(),
-      region: z.string(),
+      accountId: z.string().optional(),
+      region: z.string().optional(),
 
-      taskFamily: z.string(),
-      serviceName: z.string(),
-      clusterName: z.string(),
+      taskFamily: z.string().optional(),
+      serviceName: z.string().optional(),
+      clusterName: z.string().optional(),
 
       taskDefinition: TaskDefinitionConfigs,
 
@@ -106,10 +106,34 @@ export async function ecsDeploy(argv: {
   }
 
   const accountId = taskDefinition.accountId || config.accountId;
+
+  if (!accountId) {
+    throw new Error(`accountId not defined`);
+  }
+
   const region = taskDefinition.region || config.region;
+
+  if (!region) {
+    throw new Error(`region not defined`);
+  }
+
   const taskFamily = taskDefinition.taskFamily || config.taskFamily;
+
+  if (!taskFamily) {
+    throw new Error(`taskFamily not defined`);
+  }
+
   const clusterName = taskDefinition.clusterName || config.clusterName;
+
+  if (!clusterName) {
+    throw new Error(`clusterName not defined`);
+  }
+
   const serviceName = taskDefinition.serviceName || config.serviceName;
+
+  if (!serviceName) {
+    throw new Error(`serviceName not defined`);
+  }
 
   logBanner("Deploy Environment");
   logVariable("accountId", accountId);

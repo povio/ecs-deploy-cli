@@ -30,8 +30,8 @@ export async function ecrBuild(argv: {
     argv.pwd,
     argv.stage,
     z.object({
-      accountId: z.string(),
-      region: z.string(),
+      accountId: z.string().optional(),
+      region: z.string().optional(),
       build: z.array(
         z.object({
           name: z.string(),
@@ -72,7 +72,15 @@ export async function ecrBuild(argv: {
   }
 
   const accountId = container.accountId || config.accountId;
+
+  if (!accountId) {
+    throw new Error(`accountId not defined`);
+  }
+
   const region = container.region || config.region;
+  if (!region) {
+    throw new Error(`region not defined`);
+  }
 
   // load ECR details
   const imageName = `${accountId}.dkr.ecr.${region}.amazonaws.com/${container.repoName}:${argv.release}`;
