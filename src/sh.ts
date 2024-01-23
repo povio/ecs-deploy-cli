@@ -4,7 +4,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
 import { command as buildCommand } from "./commands/ecr-build.command";
-import { command as deployCommand } from "./commands/ecr-push.command";
+import { command as deployCommand } from "./commands/ecs-deploy.command";
 import { command as pushCommand } from "./commands/ecr-push.command";
 import { command as watchCommand } from "./commands/ecs-watch.command";
 import { command as bootstrapCommand } from "./commands/bootstrap.command";
