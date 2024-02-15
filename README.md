@@ -93,6 +93,8 @@ configs:
 Where `configFrom: backend.template` and the config file is `.config/${stage}.backend.template.yml`:
 
 ```yaml
+stage: ${func:stage}
+release: ${func:release}
 database:
   username: myapp2
   password: ${arn:aws:ssm:::parameter/myapp-dev/database/password}
