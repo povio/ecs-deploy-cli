@@ -1,4 +1,3 @@
-import { getVersion } from "../helpers/version.helper";
 import fs from "fs";
 import path from "path";
 import { dump } from "js-yaml";
@@ -26,19 +25,6 @@ export async function bootstrap(argv: {
       configs: ZeConfigs,
     }),
   );
-
-  if (argv.verbose) {
-    console.log({
-      event: "bootstrap",
-      ecsDeploy: getVersion(),
-      nodejs: process.version,
-      pwd: argv.pwd,
-      release: argv.release,
-      stage: argv.stage,
-      accountId: config.accountId,
-      region: config.region,
-    });
-  }
 
   for (const ci of config.configs) {
     if (argv.target && ci.name !== argv.target) {

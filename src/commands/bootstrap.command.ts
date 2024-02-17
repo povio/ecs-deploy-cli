@@ -3,6 +3,7 @@
  */
 
 import yargs from "yargs";
+import { getVersion } from "../helpers/version.helper";
 
 import { getBuilder, YargOption, YargsOptions } from "../helpers/yargs.helper";
 
@@ -20,15 +21,25 @@ class BootstrapOptions implements YargsOptions {
 
   @YargOption({ envAlias: "VERBOSE", default: false })
   verbose!: boolean;
+
+  @YargOption({ default: false })
+  target!: string;
 }
 
 export const command: yargs.CommandModule = {
-  command: "bootstrap",
+  command: "bootstrap [target]",
   describe: "Bootstrap the app with a config file",
   builder: getBuilder(BootstrapOptions),
   handler: async (_argv) => {
     const argv = (await _argv) as unknown as BootstrapOptions;
-
-    await bootstrap(argv);
+    if (argv.verbose) {
+      logBanner(`ECS Deploy ${getVersion()}`);
+      logVariable("nodejs", process.version);
+      logVariable("pwd", argv.pwd);
+      logVariable("release", argv.release);
+      logVariable("stage", argv.stage);
+      logVariable("target", argv.target);
+    }
+    return bootstrap(argv);
   },
 };

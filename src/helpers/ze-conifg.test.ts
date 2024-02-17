@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "assert";
 import { resolveZeConfigItem } from "./ze-config";
 
-test("config.helper", async () => {
+test("ze-config", async () => {
   process.env.MYAPP_RECORD1 = "value 1";
   process.env.MYAPP_RECORD2 = "value 2";
   process.env.MYAPP_RECORD3 = "value 3";

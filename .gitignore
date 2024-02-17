@@ -6,7 +6,6 @@
 !.yarn/releases
 !.yarn/sdks
 .yarn/versions
-!.pnp.cjs
 
 node_modules
 
@@ -17,3 +16,4 @@ node_modules
 # config
 config.local.yaml
 secrets.env
+
