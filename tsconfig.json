@@ -15,7 +15,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "skipLibCheck": true,
-    "noImplicitAny": false
+    "noImplicitAny": true
   },
-  "include": ["src/**/*", "test/**/*.test.ts"],
+  "include": ["src/**/*.ts", "test/**/*.test.ts"],
 }

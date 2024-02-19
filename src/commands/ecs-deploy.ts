@@ -316,13 +316,12 @@ export async function ecsDeploy(argv: {
         switch (message.type) {
           case "services": {
             if (
-              !message.services.some(
-                (x) =>
-                  x?.deployments?.some(
-                    (d) =>
-                      d.desiredCount !== d.runningCount ||
-                      d.rolloutState !== "COMPLETED",
-                  ),
+              !message.services.some((x) =>
+                x?.deployments?.some(
+                  (d) =>
+                    d.desiredCount !== d.runningCount ||
+                    d.rolloutState !== "COMPLETED",
+                ),
               )
             ) {
               logSuccess("Service successfully deployed!");

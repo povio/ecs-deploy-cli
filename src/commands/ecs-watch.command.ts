@@ -76,6 +76,10 @@ export const command: yargs.CommandModule = {
       });
     }
 
+    if (!taskDefinition) {
+      throw new Error("No task definition found");
+    }
+
     const region = taskDefinition.region || config2.region;
     const clusterName = taskDefinition.clusterName || config2.clusterName;
     const serviceName = taskDefinition.serviceName || config2.serviceName;

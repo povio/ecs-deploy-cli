@@ -8,6 +8,7 @@ import { getVersion } from "../helpers/version.helper";
 import { getBuilder, YargOption, YargsOptions } from "../helpers/yargs.helper";
 
 import { bootstrap } from "./bootstrap";
+import { logBanner, logVariable } from "../helpers/cli.helper.js";
 
 class BootstrapOptions implements YargsOptions {
   @YargOption({ envAlias: "PWD", demandOption: true })

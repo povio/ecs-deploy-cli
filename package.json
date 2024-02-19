@@ -13,6 +13,7 @@
     "test:watch": "tsx --watch --test ./src/**/*.test.ts",
     "build:clean": "rm -rf ./dist",
     "build": "yarn build:clean && node ./esbuild.mjs && chmod +x ./dist/sh.js",
+    "build:check": "yarn tsc --project . --noEmit",
     "lint": "eslint --fix"
   },
   "files": [
@@ -46,6 +47,8 @@
     "@smithy/node-config-provider": "^2.2.1",
     "@types/diff": "^5.0.9",
     "@types/eslint__js": "^8.42.3",
+    "@types/js-yaml": "^4.0.9",
+    "@types/lodash.merge": "^4.6.9",
     "@types/node": "^20.11.17",
     "@types/prettier": "^3.0.0",
     "@types/prompt-sync": "^4.2.3",
