@@ -19,3 +19,14 @@ test("config", async () => {
     target: "backend",
   });
 });
+
+test("config-2", async () => {
+  // prepare image
+  await bootstrap({
+    pwd: __dirname,
+    stage: "myapp-dev",
+    release: await getSha(__dirname),
+    verbose: true,
+    target: "backend-2",
+  });
+});

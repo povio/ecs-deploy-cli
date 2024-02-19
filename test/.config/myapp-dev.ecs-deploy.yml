@@ -61,3 +61,12 @@ configs:
 
       - name: database__host
         valueFrom: env:DATABASE_HOST
+  - name: backend-2
+    destination: ./.config/myapp-dev.backend-2.yml
+    values:
+
+      - name: "@"
+        configFrom: backend-2.template
+
+      - name: database__host
+        value: "localhost"
