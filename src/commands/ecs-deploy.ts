@@ -16,71 +16,83 @@ import {
 import { resolveSSMPath } from "../helpers/aws-ssm.helper";
 import { printDiff } from "../helpers/diff.helper";
 import { chk } from "../helpers/chalk.helper";
-import { resolveResource, safeLoadConfig } from "../helpers/ze-config";
+import {
+  resolveResource,
+  resolveZeConfigItem,
+  safeLoadConfig,
+  ZeConfigItemValues,
+} from "../helpers/ze-config";
 import { z } from "zod";
 import { RegisterTaskDefinitionCommandInput } from "@aws-sdk/client-ecs";
 
-export async function ecsDeploy(argv: {
+const TaskDefinitionConfigContainerDefinition = z.object({
+  name: z.string(),
+  image: z.string(),
+  environment: z.record(z.string()).optional(),
+  environmentValues: ZeConfigItemValues.optional(),
+  secrets: z.record(z.string()).optional(),
+});
+
+type TaskDefinitionConfigContainerDefinitionType = z.infer<
+  typeof TaskDefinitionConfigContainerDefinition
+>;
+
+const TaskDefinitionConfig = z.object({
+  name: z.string().optional(),
+  target: z.string().optional(),
+
+  template: z.string(),
+
+  accountId: z.string().optional(),
+  region: z.string().optional(),
+
+  taskFamily: z.string().optional(),
+  serviceName: z.string().optional(),
+  clusterName: z.string().optional(),
+
+  containerDefinitions: z.array(TaskDefinitionConfigContainerDefinition),
+});
+
+const EcrDeployConfig = z.object({
+  accountId: z.string().optional(),
+  region: z.string().optional(),
+
+  taskFamily: z.string().optional(),
+  serviceName: z.string().optional(),
+  clusterName: z.string().optional(),
+
+  taskDefinition: z
+    .union([TaskDefinitionConfig, TaskDefinitionConfig.array()])
+    .transform((val) => (Array.isArray(val) ? val : [val])),
+
+  build: z.array(
+    z.object({
+      name: z.string(),
+      repoName: z.string(),
+    }),
+  ),
+});
+
+type EcsDeployArgv = {
   pwd: string;
   stage: string;
-  target: string;
+  target?: string;
   release: string;
-  appVersion: string;
-  ci: boolean;
-  skipEcrExistsCheck: boolean;
-  verbose: boolean;
-}) {
+  appVersion?: string;
+  ci?: boolean;
+  skipEcrExistsCheck?: boolean;
+  verbose?: boolean;
+};
+
+export async function ecsDeploy(argv: EcsDeployArgv) {
   logBanner(`EcsDeploy ${getVersion()}`);
   logInfo(`NodeJS Version: ${process.version}`);
-
-  const TaskDefinitionConfig = z.object({
-    name: z.string().optional(),
-    target: z.string().optional(),
-
-    template: z.string(),
-
-    accountId: z.string().optional(),
-    region: z.string().optional(),
-
-    taskFamily: z.string().optional(),
-    serviceName: z.string().optional(),
-    clusterName: z.string().optional(),
-
-    containerDefinitions: z.array(
-      z.object({
-        name: z.string(),
-        image: z.string(),
-        environment: z.record(z.string()).optional(),
-        secrets: z.record(z.string()).optional(),
-      }),
-    ),
-  });
-
-  const TaskDefinitionConfigs = z
-    .union([TaskDefinitionConfig, TaskDefinitionConfig.array()])
-    .transform((val) => (Array.isArray(val) ? val : [val]));
 
   const config = await safeLoadConfig(
     "ecs-deploy",
     argv.pwd,
     argv.stage,
-    z.object({
-      accountId: z.string().optional(),
-      region: z.string().optional(),
-
-      taskFamily: z.string().optional(),
-      serviceName: z.string().optional(),
-      clusterName: z.string().optional(),
-
-      taskDefinition: TaskDefinitionConfigs,
-
-      build: z.array(
-        z.object({
-          name: z.string(),
-          repoName: z.string(),
-        }),
-      ),
-    }),
+    EcrDeployConfig,
   );
 
   logVariable("pwd", argv.pwd);
@@ -202,21 +214,12 @@ export async function ecsDeploy(argv: {
       }
     }
 
-    const envDict: Record<string, any> = {};
-    if (templateContainer.environment) {
-      for (const env of templateContainer.environment) {
-        if (env.name && env.value) {
-          envDict[env.name] = env.value;
-        }
-      }
-    }
-    if (configContainer.environment) {
-      for (const [name, valueFrom] of Object.entries(
-        configContainer.environment,
-      )) {
-        envDict[name] = valueFrom;
-      }
-    }
+    const envDict = await resolveEnvDict(
+      argv,
+      region,
+      templateContainer,
+      configContainer,
+    );
 
     if (envDict.STAGE && envDict.STAGE !== argv.stage) {
       throw new Error(`Stage mismatch - tried to deploy to ${envDict.STAGE}`);
@@ -353,4 +356,38 @@ export async function ecsDeploy(argv: {
     );
     await watch.promise;
   }
+}
+
+export async function resolveEnvDict(
+  argv: EcsDeployArgv,
+  region: string,
+  templateContainer: {
+    environment?: { name?: string; value?: string }[];
+  },
+  configContainer: TaskDefinitionConfigContainerDefinitionType,
+): Promise<Record<string, any>> {
+  let envDict: Record<string, any> = {};
+  if (templateContainer.environment) {
+    for (const { name, value } of templateContainer.environment) {
+      if (name && value) {
+        envDict[name] = value;
+      }
+    }
+  }
+  // legacy
+  if (configContainer.environment) {
+    envDict = { ...envDict, ...configContainer.environment };
+  }
+  if (configContainer.environmentValues) {
+    envDict = {
+      ...envDict,
+      ...(await resolveZeConfigItem(
+        { values: configContainer.environmentValues },
+        { awsRegion: region, release: argv.release },
+        argv.pwd,
+        argv.stage,
+      )),
+    };
+  }
+  return envDict;
 }

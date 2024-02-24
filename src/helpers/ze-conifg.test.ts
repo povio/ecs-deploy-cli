@@ -9,8 +9,8 @@ test("ze-config", async () => {
 
   const config = await resolveZeConfigItem(
     {
-      name: "test",
-      destination: "./.config/myapp-dev.backend.yml",
+      //name: "test",
+      //destination: "./.config/myapp-dev.backend.yml",
       values: [
         { name: "database__name", value: "test" },
         { name: "database__username2", value: "test" },

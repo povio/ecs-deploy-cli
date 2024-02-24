@@ -45,22 +45,33 @@ build:
     #context: ./test
     #dockerfile: Dockerfile
     platform: linux/amd64
-    environment:
-      # used at build time
-      BUILD_VAR: value
+      
+    environmentValues:
+      # resolved at build time
+      - name: RELEASE
+        valueFrom: "func:release"
+      - name: BUILD_TIMESTAMP
+        valueFrom: "func:timestamp"
+      - name: BUILD_ENV_VAR_1
+        value: "static value"
 
 # deploy to ecs with `ecs-deploy deploy --stage dev`
 taskDefinition:
   - name: default
+    # resolved at deploy time, requires SSM access
     template: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition
     containerDefinitions:
       - name: backend
         # name of build above or any other docker path
         image: backend
 
-        # inserted into task definition
-        environment:
-          STAGE1: dev
+        # inserted into task definition and resolved at deploy time
+        environmentValues:
+          - name: DEPLOY_TIMESTAMP
+            valueFrom: "func:timestamp"
+          - name: TASK_ENV_VAR_1
+            value: "static value"
+          
         # inserted into task definition and resolved at task init
         secrets:
           STAGE2: arn:aws:ssm:::parameter/myapp-dev/backend/task-definition

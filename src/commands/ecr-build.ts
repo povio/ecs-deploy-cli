@@ -5,7 +5,11 @@ import {
   logVariable,
 } from "../helpers/cli.helper";
 import path from "path";
-import { safeLoadConfig } from "../helpers/ze-config";
+import {
+  resolveZeConfigItem,
+  safeLoadConfig,
+  ZeConfigItemValues,
+} from "../helpers/ze-config";
 import { Docker } from "../helpers/docker.helper";
 import { getAwsIdentity } from "../helpers/aws.helper";
 import {
@@ -15,36 +19,43 @@ import {
 import { chk } from "../helpers/chalk.helper";
 import { z } from "zod";
 
-export async function ecrBuild(argv: {
+type EcrBuildArgv = {
   pwd: string;
   stage: string;
-  container: string;
-  release: string;
-  skipEcrExistsCheck: boolean;
-  buildx: boolean;
-  skipPush: boolean;
-  verbose: boolean;
-}) {
+  container?: string;
+  release?: string;
+  skipEcrExistsCheck?: boolean;
+  buildx?: boolean;
+  skipPush?: boolean;
+  verbose?: boolean;
+};
+
+const EcrBuildConfigBuildItem = z.object({
+  name: z.string(),
+  repoName: z.string(),
+  region: z.string().optional(),
+  accountId: z.string().optional(),
+  context: z.string().optional(),
+  dockerfile: z.string().optional(),
+  platform: z.string().default("linux/amd64"),
+  environment: z.record(z.string()).optional(),
+  environmentValues: ZeConfigItemValues.optional(),
+});
+
+type EcrBuildConfigBuildItemType = z.infer<typeof EcrBuildConfigBuildItem>;
+
+const EcrBuildConfig = z.object({
+  accountId: z.string().optional(),
+  region: z.string().optional(),
+  build: z.array(EcrBuildConfigBuildItem),
+});
+
+export async function ecrBuild(argv: EcrBuildArgv) {
   const config = await safeLoadConfig(
     "ecs-deploy",
     argv.pwd,
     argv.stage,
-    z.object({
-      accountId: z.string().optional(),
-      region: z.string().optional(),
-      build: z.array(
-        z.object({
-          name: z.string(),
-          repoName: z.string(),
-          region: z.string().optional(),
-          accountId: z.string().optional(),
-          context: z.string().optional(),
-          dockerfile: z.string().optional(),
-          platform: z.string().default("linux/amd64"),
-          environment: z.record(z.string()).optional(),
-        }),
-      ),
-    }),
+    EcrBuildConfig,
   );
 
   const docker = new Docker({
@@ -66,7 +77,10 @@ export async function ecrBuild(argv: {
 
   logVariable("container", argv.container);
 
-  const container = config.build.find((x) => x.name === argv.container);
+  const container: EcrBuildConfigBuildItemType | undefined = config.build.find(
+    (x) => x.name === argv.container,
+  );
+
   if (!container) {
     throw new Error(`Container ${argv.container} not found`);
   }
@@ -81,6 +95,15 @@ export async function ecrBuild(argv: {
   if (!region) {
     throw new Error(`region not defined`);
   }
+
+  const buildargs = await resolveBuildargs(argv, region, container);
+
+  logBanner(`Build Args`);
+  for (const [key, value] of Object.entries(buildargs)) {
+    logVariable(`${key}`, value);
+  }
+
+  logBanner(`Image Details`);
 
   // load ECR details
   const imageName = `${accountId}.dkr.ecr.${region}.amazonaws.com/${container.repoName}:${argv.release}`;
@@ -145,14 +168,11 @@ export async function ecrBuild(argv: {
       {
         imageName,
         src: [dockerfilePath],
-        buildargs: {
-          RELEASE: argv.release,
-          ...(container.environment ? container.environment : {}),
-        },
+        buildargs,
         context: dockerfileContext,
         buildx: argv.buildx,
         platform: container.platform,
-        push: argv.buildx && !argv.skipPush,
+        push: !!argv.buildx && !argv.skipPush,
       },
       { verbose: argv.verbose },
     );
@@ -171,4 +191,29 @@ export async function ecrBuild(argv: {
       )}`,
     );
   }
+}
+export async function resolveBuildargs(
+  argv: EcrBuildArgv,
+  region: string,
+  container: EcrBuildConfigBuildItemType,
+) {
+  let buildargs: Record<string, any> = {};
+
+  // legacy
+  if (container.environment) {
+    buildargs = { ...buildargs, ...container.environment };
+  }
+
+  if (container.environmentValues) {
+    buildargs = {
+      ...buildargs,
+      ...(await resolveZeConfigItem(
+        { values: container.environmentValues },
+        { awsRegion: region, release: argv.release },
+        argv.pwd,
+        argv.stage,
+      )),
+    };
+  }
+  return buildargs;
 }

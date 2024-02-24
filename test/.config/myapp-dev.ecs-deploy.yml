@@ -10,9 +10,16 @@ build:
     repoName: myapp-backend
     #context: ./test
     #dockerfile: Dockerfile
+
     environment:
       # used at build time
-      BUILD_VAR: value
+      BUILD_VAR: legacy-value
+
+    environmentValues:
+      - name: BUILD_TIME
+        valueFrom: "func:timestamp"
+      - name: RELEASE
+        valueFrom: "func:release"
 
 # deploy to ecs with `ecs-deploy deploy --stage dev`
 taskDefinition:
@@ -22,6 +29,13 @@ taskDefinition:
       - name: backend
         # name of build above or any other docker path
         image: backend
+
+        environment:
+          LEGACY_ENV: a value
+
+        environmentValues:
+          - name: buildTime
+            valueFrom: "func:timestamp"
 
         # resolved at task init - avoid using these if possible
         #environment:

@@ -1,9 +1,4 @@
-import merge from "lodash.merge";
-import {
-  GetParameterCommand,
-  GetParametersByPathCommand,
-  SSMClient,
-} from "@aws-sdk/client-ssm";
+import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
 import { getCredentials } from "./aws.helper";
 
 export function getSSMInstance(options: { region: string }) {
@@ -60,6 +55,7 @@ export async function getSSMParameter(options: {
   return response.Parameter.Value;
 }
 
+/*
 export async function getSSMParametersByPath(options: {
   region: string;
   name: string;
@@ -93,3 +89,4 @@ export async function getSSMParametersByPath(options: {
   }
   return parameters;
 }
+*/

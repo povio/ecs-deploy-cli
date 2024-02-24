@@ -20,8 +20,7 @@ export async function bootstrap(argv: {
     argv.pwd,
     argv.stage,
     z.object({
-      accountId: z.string(),
-      region: z.string(),
+      region: z.string().optional(),
       configs: ZeConfigs,
     }),
   );
