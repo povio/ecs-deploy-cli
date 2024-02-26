@@ -75,6 +75,13 @@ configs:
 
       - name: database__host
         valueFrom: env:DATABASE_HOST
+
+  - name: backend-ini
+    destination: ./.config/.env.myapp-dev.backend
+    values:
+      - name: "@"
+        configFrom: backend.template
+
   - name: backend-2
     destination: ./.config/myapp-dev.backend-2.yml
     values:

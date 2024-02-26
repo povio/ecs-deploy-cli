@@ -10,3 +10,8 @@ database:
     },
     "value 3",
   ]
+
+single_line_string: |
+  this should
+  remain a single string
+  with new lines

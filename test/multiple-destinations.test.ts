@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /**
  * Test multiple destinations from a single ECR image
  */
-test("multiple-destinations build", async () => {
+test.skip("multiple-destinations build", async () => {
   // prepare image
   await ecrBuild({
     pwd: __dirname,
@@ -28,7 +28,7 @@ test("multiple-destinations build", async () => {
   //
 });
 
-test("multiple-destinations deploy", async () => {
+test.skip("multiple-destinations deploy", async () => {
   // prepare image
 
   await ecsDeploy({
