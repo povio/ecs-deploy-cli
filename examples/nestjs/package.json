@@ -7,6 +7,6 @@
      "start:prod": "yarn bootstrap && node dist/main"
   },
   "dependencies": {
-    "ecs-deploy-cli": "github:poviolabs/ecs-deploy-cli#v4"
+    "ecs-deploy-cli": "github:poviolabs/ecs-deploy-cli#v4.2"
   }
 }
