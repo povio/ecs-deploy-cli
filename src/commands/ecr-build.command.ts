@@ -49,6 +49,12 @@ class EcrBuildOptions implements YargsOptions {
 
   @YargOption({ default: false })
   verbose!: boolean;
+
+  @YargOption({ default: null })
+  outputYml!: string;
+
+  @YargOption({ default: false })
+  dryRun!: boolean;
 }
 
 export const command: yargs.CommandModule = {
@@ -66,6 +72,7 @@ export const command: yargs.CommandModule = {
       logVariable("pwd", argv.pwd);
       logVariable("release", argv.release);
       logVariable("stage", argv.stage);
+      logVariable("dryRun", argv.dryRun);
     }
 
     if (!argv.ci) {
