@@ -34,6 +34,7 @@ type EcrBuildArgv = {
   skipPush?: boolean;
   verbose?: boolean;
   outputYml?: string;
+  outputJson?: string;
   dryRun?: boolean;
 };
 
@@ -244,8 +245,17 @@ export async function ecrBuild(argv: EcrBuildArgv) {
   } finally {
     if (argv.outputYml) {
       const outputYaml = path.join(argv.pwd, argv.outputYml);
-      logInfo(`Writing debug output to ${outputYaml}`);
+      logInfo(`Writing meta data to ${outputYaml}`);
       fs.writeFileSync(outputYaml, yaml.dump(debugOutput), "utf-8");
+    }
+    if (argv.outputJson) {
+      const outputJson = path.join(argv.pwd, argv.outputJson);
+      logInfo(`Writing meta data to ${outputJson}`);
+      fs.writeFileSync(
+        outputJson,
+        JSON.stringify(debugOutput, null, 4),
+        "utf-8",
+      );
     }
   }
 }

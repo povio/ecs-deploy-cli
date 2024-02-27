@@ -53,6 +53,9 @@ class EcrBuildOptions implements YargsOptions {
   @YargOption({ default: null })
   outputYml!: string;
 
+  @YargOption({ default: null })
+  outputJson!: string;
+
   @YargOption({ default: false })
   dryRun!: boolean;
 }

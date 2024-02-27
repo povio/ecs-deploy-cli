@@ -2,7 +2,7 @@
 
 [4.2.2] - 2024-02-27
 
-Added yaml output of build process.
+Added yaml and json output of build process.
 
 [4.2.1] - 2024-02-26
 
