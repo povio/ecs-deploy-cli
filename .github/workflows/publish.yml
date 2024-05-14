@@ -1,13 +1,15 @@
 name: Publish to NPM
 on:
   push:
-    branches:
-      - 'v4.*'
+    tags:
+      - v4.*
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: v4
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: '20.13.1'

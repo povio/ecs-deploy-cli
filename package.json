@@ -2,7 +2,7 @@
   "name": "@povio/ecs-deploy-cli",
   "version": "4.3.0",
   "bin": {
-    "ecs-deploy": "./dist/sh.js"
+    "ecs-deploy": "dist/sh.js"
   },
   "scripts": {
     "start": "tsx ./src/sh.ts",
@@ -13,7 +13,8 @@
     "build:clean": "rm -rf ./dist",
     "build": "yarn build:clean && node ./esbuild.mjs && chmod +x ./dist/sh.js",
     "build:check": "yarn tsc --project . --noEmit",
-    "lint": "eslint --fix"
+    "lint": "eslint --fix",
+    "push": "yarn exec ./scripts/publish.sh"
   },
   "files": [
     "dist",
@@ -29,7 +30,7 @@
   "homepage": "https://github.com/povio/ecs-deploy-cli",
   "bugs": "https://github.com/povio/ecs-deploy-cli/issues",
   "repository": {
-    "url": "https://github.com/povio/ecs-deploy-cli",
+    "url": "git+https://github.com/povio/ecs-deploy-cli.git",
     "type": "git"
   },
   "author": "Marko Zabreznik <marko.zabreznik@povio.com>",
