@@ -1,5 +1,9 @@
 # Changelog
 
+[4.2.2] - 2024-05-14
+
+Moved to https://github.com/povio/ecs-deploy-cli and published npm package
+
 [4.2.2] - 2024-02-27
 
 Added yaml and json output of build process.
