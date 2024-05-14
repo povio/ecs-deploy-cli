@@ -15,7 +15,5 @@ node_modules
 .idea
 .DS_Store
 
-# config
-config.local.yaml
-secrets.env
-
+# packages
+povio-ecs-deploy-cli-*

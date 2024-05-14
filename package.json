@@ -1,7 +1,6 @@
 {
   "name": "@povio/ecs-deploy-cli",
   "version": "4.3.0",
-  "packageManager": "yarn@4.2.2",
   "bin": {
     "ecs-deploy": "./dist/sh.js"
   },
@@ -17,7 +16,8 @@
     "lint": "eslint --fix"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "keywords": [
     "povio",
@@ -32,13 +32,13 @@
     "url": "https://github.com/povio/ecs-deploy-cli",
     "type": "git"
   },
-  "contributors": [
-    "Marko Zabreznik <marko.zabreznik@povio.com>"
-  ],
+  "author": "Marko Zabreznik <marko.zabreznik@povio.com>",
+  "license": "BSD-3-Clause",
   "devDependencies": {
     "@aws-sdk/client-ecr": "3.575.0",
     "@aws-sdk/client-ecs": "3.575.0",
     "@aws-sdk/client-ssm": "3.575.0",
+    "@aws-sdk/client-sso-oidc": "^3.575.0",
     "@aws-sdk/client-sts": "3.575.0",
     "@aws-sdk/credential-provider-node": "^3.575.0",
     "@aws-sdk/credential-providers": "^3.575.0",
@@ -80,7 +80,5 @@
     "yarn": ">= 3.2",
     "npm": ">= 8"
   },
-  "dependencies": {
-    "@aws-sdk/client-sso-oidc": "^3.575.0"
-  }
+  "packageManager": "yarn@4.2.2"
 }
