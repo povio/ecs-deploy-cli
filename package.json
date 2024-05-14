@@ -1,7 +1,7 @@
 {
   "name": "@povio/ecs-deploy-cli",
-  "version": "4.2.2",
-  "packageManager": "yarn@4.1.0",
+  "version": "4.3.0",
+  "packageManager": "yarn@4.2.2",
   "bin": {
     "ecs-deploy": "./dist/sh.js"
   },
@@ -26,10 +26,10 @@
     "deploy",
     "aws"
   ],
-  "homepage": "https://github.com/poviolabs/ecs-deploy-cli",
-  "bugs": "https://github.com/poviolabs/ecs-deploy-cli/issues",
+  "homepage": "https://github.com/povio/ecs-deploy-cli",
+  "bugs": "https://github.com/povio/ecs-deploy-cli/issues",
   "repository": {
-    "url": "https://github.com/poviolabs/ecs-deploy-cli",
+    "url": "https://github.com/povio/ecs-deploy-cli",
     "type": "git"
   },
   "contributors": [
