@@ -1268,7 +1268,7 @@ __metadata:
     yargs: "npm:^17.7.2"
     zod: "npm:^3.23.8"
   bin:
-    ecs-deploy: ./dist/sh.js
+    ecs-deploy: dist/sh.js
   languageName: unknown
   linkType: soft
 
