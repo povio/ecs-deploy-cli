@@ -4,6 +4,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
 import { command as buildCommand } from "./commands/ecr-build.command";
+import { command as buildEnvCommand } from "./commands/build-env.command";
 import { command as deployCommand } from "./commands/ecs-deploy.command";
 import { command as pushCommand } from "./commands/ecr-push.command";
 import { command as watchCommand } from "./commands/ecs-watch.command";
@@ -15,6 +16,7 @@ yargs(hideBin(process.argv))
   .version(getVersion() || "unknown")
   .scriptName("ecs-deploy")
   .command(buildCommand)
+  .command(buildEnvCommand)
   .command(pushCommand)
   .command(deployCommand)
   .command(watchCommand)

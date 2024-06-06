@@ -37,7 +37,7 @@ type TaskDefinitionConfigContainerDefinitionType = z.infer<
   typeof TaskDefinitionConfigContainerDefinition
 >;
 
-const TaskDefinitionConfig = z.object({
+export const TaskDefinitionConfig = z.object({
   name: z.string().optional(),
   target: z.string().optional(),
 

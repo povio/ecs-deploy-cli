@@ -38,7 +38,7 @@ type EcrBuildArgv = {
   dryRun?: boolean;
 };
 
-const EcrBuildConfigBuildItem = z.object({
+export const EcrBuildConfigBuildItem = z.object({
   name: z.string(),
   repoName: z.string(),
   region: z.string().optional(),
@@ -50,9 +50,11 @@ const EcrBuildConfigBuildItem = z.object({
   environmentValues: ZeConfigItemValues.optional(),
 });
 
-type EcrBuildConfigBuildItemType = z.infer<typeof EcrBuildConfigBuildItem>;
+export type EcrBuildConfigBuildItemType = z.infer<
+  typeof EcrBuildConfigBuildItem
+>;
 
-const EcrBuildConfig = z.object({
+export const EcrBuildConfig = z.object({
   accountId: z.string().optional(),
   region: z.string().optional(),
   build: z.array(EcrBuildConfigBuildItem),

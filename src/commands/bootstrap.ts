@@ -69,6 +69,10 @@ export function generateIni(data: Record<string, any>): string {
   //  - escape values so that we preserve the format of the ini file
   return Object.entries(data)
     .map(([key, value]) => {
+      if (value === undefined || value === null) {
+        // undefined values are not allowed in .env files
+        return `# ${key}=`;
+      }
       if (typeof value === "object") {
         return `${key}="${JSON.stringify(value)
           .replace(/"/g, '\\"')
