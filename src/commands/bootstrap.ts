@@ -71,7 +71,7 @@ export function generateIni(data: Record<string, any>): string {
     .map(([key, value]) => {
       if (value === undefined || value === null) {
         // undefined values are not allowed in .env files
-        return `# ${key}=`;
+        return;
       }
       if (typeof value === "object") {
         return `${key}="${JSON.stringify(value)
@@ -85,6 +85,7 @@ export function generateIni(data: Record<string, any>): string {
         //  and newlines
         .replace(/\r?\n/g, "\\n")}"`;
     })
+    .filter((x) => x)
     .join("\n");
 }
 

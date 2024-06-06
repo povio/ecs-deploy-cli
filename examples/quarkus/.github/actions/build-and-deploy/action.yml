@@ -1,0 +1,72 @@
+name: 'Build and deploy'
+description: 'Build and deploy to ECS'
+
+inputs:
+  STAGE:
+    description: 'The stage to deploy to'
+    required: true
+  AWS_ACCESS_KEY_ID:
+    description: 'AWS Access Key ID'
+    required: true
+  AWS_SECRET_ACCESS_KEY:
+    description: 'AWS Secret Access Key'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'corretto'
+        java-version: '21'
+
+    - name: Get build environment
+      id: build-env
+      shell: bash
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+      run: npx --yes @povio/ecs-deploy-cli@^4.3.1 build-env --stage ud-dev --target backend --container backend >> $GITHUB_ENV
+
+    - name: Configure gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    # Build the image using docker
+    # ./gradlew addExtension --extensions='container-image-jib'
+    - name: Build and tag image
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      shell: bash
+      run: |
+        ./gradlew build \
+        -Dquarkus.container-image.build=true \
+        -Dquarkus.container-image.image=${{ env.IMAGE_URL }} \
+        -x test
+
+    #- name: Integration Tests
+    #  shell: bash
+    #  run: |
+    #    ./gradlew quarkusIntTest
+
+    - name: Upload build reports
+      uses: actions/upload-artifact@v3
+      if: ${{ failure() }}
+      with:
+        name: build-reports
+        path: |
+          backend/build/reports/
+          backend/build/reports/**
+          build/reports/
+          build/reports/**
+        retention-days: 7
+
+    - name: Deploy Amazon ECS task definition
+      shell: bash
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        npx --yes @povio/ecs-deploy-cli@^4.3.1 push backend --ci true --stage ${{ inputs.STAGE }} --release $GITHUB_SHA
+        npx --yes @povio/ecs-deploy-cli@^4.3.1 deploy backend --ci true --stage ${{ inputs.STAGE }} --release $GITHUB_SHA --verbose
