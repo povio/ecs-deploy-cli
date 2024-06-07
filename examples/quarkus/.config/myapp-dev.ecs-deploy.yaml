@@ -1,0 +1,35 @@
+# ECS Deploy configuration file
+# @see https://github.com/povio/ecs-deploy-cli/tree/v4?tab=readme-ov-file#configure
+
+accountId: '000000000000'
+region: us-east-1
+taskFamily: myapp-dev-backend
+serviceName: myapp-dev-backend
+clusterName: myapp-dev
+
+# build and upload to ecr with `ecs-deploy build backend --stage myapp-dev`
+build:
+  - name: backend
+    repoName: myapp-dev
+    platform: linux/amd64
+
+# deploy to ecs with `ecs-deploy deploy --stage myapp-dev`
+taskDefinition:
+  - name: backend
+    template: arn:aws:ssm:us-east-1::parameter/myapp-dev/backend/task-definition
+    containerDefinitions:
+      - name: backend
+        image: backend
+
+        # inserted into task definition and resolved at deploy time
+        environmentValues:
+          - name: quarkus.datasource.username
+            value: root
+          - name: quarkus.datasource.jdbc.url
+            value: "jdbc:postgresql://myapp-dev.000000000.us-east-1.rds.amazonaws.com:5432/myapp"
+          - name: quarkus.cognito-user-pools.endpoint-override
+            value: "https://myapp-dev-pool.auth.us-east-1.amazoncognito.com"
+
+        # inserted into task definition and resolved at task init
+        secrets:
+          quarkus.datasource.password: arn:aws:ssm:::parameter/myapp-dev/rds/password
