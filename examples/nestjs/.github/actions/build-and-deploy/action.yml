@@ -1,0 +1,47 @@
+name: 'Build and deploy'
+description: 'Build and deploy to ECS'
+
+inputs:
+  STAGE:
+    description: 'The stage to deploy to'
+    required: true
+  AWS_ACCESS_KEY_ID:
+    description: 'AWS Access Key ID'
+    required: true
+  AWS_SECRET_ACCESS_KEY:
+    description: 'AWS Secret Access Key'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: yarn
+
+    - name: Install dependencies
+      shell: bash
+      run: yarn install --immutable
+
+    - name: Build
+      shell: bash
+      run: >-
+        AWS_ACCESS_KEY_ID=${{inputs.AWS_ACCESS_KEY_ID}}
+        AWS_SECRET_ACCESS_KEY=${{inputs.AWS_SECRET_ACCESS_KEY}}
+        yarn ecs-deploy build backend --ci true --stage ${{ inputs.STAGE }} --release $GITHUB_SHA --verbose
+
+    - name: Deploy
+      shell: bash
+      run: >-
+        AWS_ACCESS_KEY_ID=${{inputs.AWS_ACCESS_KEY_ID}}
+        AWS_SECRET_ACCESS_KEY=${{inputs.AWS_SECRET_ACCESS_KEY}}
+        yarn ecs-deploy deploy --ci true --stage ${{ inputs.STAGE }} --release $GITHUB_SHA --verbose
